@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ZoneValues xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<Zone name="7A">
+		<CeilingRSI>10.4292</CeilingRSI>
+		<WallRSI>3.0802</WallRSI>
+		<GarWallRSI>2.9199</GarWallRSI>
+		<BsmtWallRSI>3.3443</BsmtWallRSI>
+		<FloorRSI>5.0191</FloorRSI>
+		<GarFloorRSI>4.8589</GarFloorRSI>
+        	<HeatedSlabRSI>2.78254</HeatedSlabRSI>
+        	<SlabRSI>1.902</SlabRSI>
+		<WindowRSI>0.6212</WindowRSI>
+		<DoorRSI>0.6211</DoorRSI>
+        	<FurnaceEF>95</FurnaceEF>
+		<ACSeer>14.5</ACSeer>
+        	<HeatPumpHSPF>7.1</HeatPumpHSPF>
+		<DefaultACH>2.5</DefaultACH>
+		<DefaultDrawPattern>4</DefaultDrawPattern>
+	</Zone>
+	<Zone name="6">
+		<CeilingRSI>8.6699</CeilingRSI>
+		<WallRSI>3.0802</WallRSI>
+		<GarWallRSI>2.9199</GarWallRSI>
+		<BsmtWallRSI>2.8636</BsmtWallRSI>
+		<FloorRSI>4.6704</FloorRSI>
+		<GarFloorRSI>4.8589</GarFloorRSI>
+        	<HeatedSlabRSI>2.78254</HeatedSlabRSI>
+        	<SlabRSI>1.902</SlabRSI>
+		<WindowRSI>0.6212</WindowRSI>
+		<DoorRSI>0.6211</DoorRSI>
+        	<FurnaceEF>95</FurnaceEF>
+		<ACSeer>14.5</ACSeer>
+        	<HeatPumpHSPF>7.1</HeatPumpHSPF>
+		<DefaultACH>2.5</DefaultACH>
+		<DefaultDrawPattern>4</DefaultDrawPattern>
+</Zone>
+</ZoneValues>
