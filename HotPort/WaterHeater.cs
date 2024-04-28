@@ -160,8 +160,10 @@ namespace HotPort
 
             return patternElement;
         }
-        public void AddTank()
+        public void AddTank(bool basement)
         {
+            int locationCode ()=> basement ? 2 : 1;
+
             string tankOrder;
             if (primary)
             {
@@ -207,7 +209,7 @@ namespace HotPort
                         new XElement("English", "User specified"),
                         new XElement("French", "Spécifié par l'utilisateur")),
                     new XElement("TankLocation",
-                        new XAttribute("code", "2"),
+                        new XAttribute("code", locationCode()),
                         new XElement("English", "Basement"),
                         new XElement("French", "Sous-sol"))));
 

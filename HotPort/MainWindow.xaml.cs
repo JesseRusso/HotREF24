@@ -20,7 +20,7 @@ namespace HotPort
     {
         XDocument? propHouse;
         private XDocument? newHouse;
-        public string? templatePath;
+        public string templatePath;
         string? excelFilePath;
         private string proposedAddress;
         private string? directoryString;
@@ -287,6 +287,8 @@ namespace HotPort
                 newHouse.Save(sfd.FileName);
             }
             template = null;
+            templatePath = "No template selected";
+            TemplateTextBlock.Text = templatePath;
         }
         private void TemplateButton_Click(object sender, RoutedEventArgs e)
         {
@@ -300,6 +302,7 @@ namespace HotPort
             if (ofd.ShowDialog() == true)
             {
                 templatePath = ofd.FileName;
+                TemplateTextBlock.Text = ofd.SafeFileName.Split(".").First();
             }
         }
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -340,8 +343,7 @@ namespace HotPort
                 return pathStrings[0].ToString();
             }
         }
-    };
-}
+    }}
 
 
 

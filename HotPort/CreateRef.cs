@@ -457,7 +457,7 @@ namespace HotPort
                 }
             return house;
         }
-        //Method to get the value of single cells from worksheet
+        //Method to get the value of a single cell from worksheet
         public string GetCellValue(string sheetName, string refCell)
         {
             string? value = null;

@@ -13,26 +13,26 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="0.5*"/>
             <RowDefinition Height="0.8*"/>
-            <RowDefinition/>
+            <RowDefinition />
         </Grid.RowDefinitions>
         <Button x:Name="WorksheetButton" Content="Select Worksheet" HorizontalAlignment="Center" Margin="0,35,0,0" VerticalAlignment="Top" Width="320" Height="20" Click="WorksheetButton_Click"/>
         <Button x:Name="TemplateButton" Content="Select Template" HorizontalAlignment="Center" Margin="0,36,0,0" VerticalAlignment="Top" Width="320" Grid.Row="1" Height="20" Click="TemplateButton_Click"/>
-        <Button x:Name="CreatePropButton" Content="Create Proposed File" HorizontalAlignment="Center" Margin="0,81,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.Row="1" Click="CreatePropButton_Click"/>
-        <Button x:Name="CreateRefButton" Content="Create REF" HorizontalAlignment="Center" Width="320" Grid.Row="2" Height="20" VerticalAlignment="Bottom" Click="CreateRefButton_Click" Margin="0,0,0,20"/>
+        <Button x:Name="CreatePropButton" Content="Create Proposed File" HorizontalAlignment="Center" Margin="0,81,0,10" VerticalAlignment="Bottom" Width="320" Height="20" Grid.Row="1" Click="CreatePropButton_Click"/>
+        <Button x:Name="CreateRefButton" Content="Create REF" HorizontalAlignment="Center" Width="320" Grid.Row="2" Height="20" VerticalAlignment="Top" Click="CreateRefButton_Click" Margin="0,120,0,0"/>
         <TextBlock x:Name="worksheetTextBlock" HorizontalAlignment="Left" Margin="20,60,0,0" TextWrapping="Wrap" Text="No worksheet selected" VerticalAlignment="Top" Width="190" RenderTransformOrigin="0.5,0.692"/>
-        <Button x:Name="SelectPropFileButton" Content="Select Proposed File" HorizontalAlignment="Left" Margin="20,40,0,0" VerticalAlignment="Top" Width="240" Height="20" Grid.Row="2" Click="SelectPropFileButton_Click"/>
-        <TextBlock x:Name="ProposedFileTextBlock" HorizontalAlignment="Left" Margin="20,65,0,0" Grid.Row="2" TextWrapping="Wrap" VerticalAlignment="Top" Width="190" Text="No file selected"/>
-        <ComboBox x:Name="ZoneSelectBox" HorizontalAlignment="Right" Margin="0,40,20,0" Grid.Row="2" VerticalAlignment="Top" Width="75" Height="20" />
+        <Button x:Name="SelectPropFileButton" Content="Select Proposed File" HorizontalAlignment="Left" Margin="20,50,0,0" VerticalAlignment="Top" Width="240" Height="20" Grid.Row="2" Click="SelectPropFileButton_Click"/>
+        <TextBlock x:Name="ProposedFileTextBlock" HorizontalAlignment="Left" Margin="20,0,0,0" Grid.Row="2" TextWrapping="Wrap" VerticalAlignment="Center" Width="240" Text="No file selected"/>
+        <ComboBox x:Name="ZoneSelectBox" HorizontalAlignment="Right" Margin="0,50,20,0" Grid.Row="2" VerticalAlignment="Top" Width="75" Height="20" />
         <Menu Grid.Column="0" Grid.Row="0" Height="20" Width="{Binding Width, ElementName=grid}" VerticalAlignment="Top">
             <MenuItem Header="Settings" HorizontalAlignment="Left" Grid.IsSharedSizeScope="True" Margin="15,0,0,0">
                 <MenuItem x:Name="DefaultDirectory" Header="Default template directory" Click="DefaultDirectory_Click" HorizontalAlignment="Left" MaxHeight="20"     ScrollViewer.VerticalScrollBarVisibility="Disabled"/>
             </MenuItem>
         </Menu>
-        <GroupBox Header="PROPOSED" Margin="10,10,10,10" Grid.Row="1" BorderBrush="#FF979CA0" Panel.ZIndex="-1">
-            <TextBlock x:Name="TemplateTextBlock" HorizontalAlignment="Left" Margin="5,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" RenderTransformOrigin="0.487,1.646" Width="190"/>
+        <GroupBox Header="PROPOSED" Margin="10,10,10,0" Grid.Row="1" BorderBrush="#FF979CA0" Panel.ZIndex="-1">
+            <TextBlock x:Name="TemplateTextBlock" HorizontalAlignment="Left" Margin="5,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" RenderTransformOrigin="0.487,1.646" Width="300" Text="No template selected"/>
         </GroupBox>
-        <GroupBox Header="REFERENCE" Margin="10,0,10,10" Grid.Row="2" Panel.ZIndex="-1" BorderBrush="#FF979CA0">
-            <Label Content="Zone" HorizontalAlignment="Left" Margin="250,0,0,0" VerticalAlignment="Top" Width="75"/>
+        <GroupBox Header="REFERENCE" Margin="10,134,10,10" Grid.Row="1" Panel.ZIndex="-1" BorderBrush="#FF979CA0" Grid.RowSpan="2">
+            <Label Content="Zone" HorizontalAlignment="Left" Margin="250,0,0,0" VerticalAlignment="Top" Width="75" Height="27"/>
         </GroupBox>
     </Grid>
 </Window>
