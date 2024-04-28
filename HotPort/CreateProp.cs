@@ -8,15 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 
-using HotPort.Properties;
-using System.Windows;
-using Microsoft.Win32;
-using System.ComponentModel;
-using System.Windows.Input;
-
-using Ookii.Dialogs.Wpf;
-using System.Reflection;
-
 namespace HotPort
 {
     public class CreateProp
