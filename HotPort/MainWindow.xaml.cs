@@ -20,7 +20,7 @@ namespace HotPort
     {
         XDocument? propHouse;
         private XDocument? newHouse;
-        public string templatePath;
+        public string? templatePath;
         string? excelFilePath;
         private string proposedAddress;
         private string? directoryString;
@@ -287,8 +287,8 @@ namespace HotPort
                 newHouse.Save(sfd.FileName);
             }
             template = null;
-            templatePath = "No template selected";
-            TemplateTextBlock.Text = templatePath;
+            templatePath = null;
+            TemplateTextBlock.Text = "No template selected";
         }
         private void TemplateButton_Click(object sender, RoutedEventArgs e)
         {

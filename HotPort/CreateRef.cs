@@ -269,12 +269,13 @@ namespace HotPort
                 if (tank.Element("DrawPattern") == null)
                 {
                     tank.Element("EnergyFactor")?.SetAttributeValue("inputCapacity", "0");
-                    tank.Element("EnergyFactor").AddAfterSelf(
+                    tank.Element("EnergyFactor")?.AddAfterSelf(
                         new XElement("DrawPattern",
                             new XAttribute("code", defaultUsageBin),
                             new XElement("English", map[$"{defaultUsageBin}E"].Value),
                             new XElement("French", map[$"{defaultUsageBin}F"].Value)));
                 }
+                //instantaneous - condensting heaters
                 if (tank.Element("TankType").Attribute("code").Value.Equals("12"))
                 {
                     tank.SetAttributeValue("flueDiameter", "0");
@@ -286,7 +287,7 @@ namespace HotPort
             }
             if (tank.Element("EnergySource").Attribute("code").Value == "1")
             {
-                tank.Element("EnergyFactor").SetAttributeValue("value", Math.Round(Convert.ToDouble(GetCellValue("General", "J31")), 2));
+                tank.Element("EnergyFactor").SetAttributeValue("value", Math.Round(Convert.ToDouble(GetCellValue("General", "J31")), 3));
             }
         }
 
@@ -295,21 +296,8 @@ namespace HotPort
         {
             foreach (XElement vent in house.Descendants("WholeHouseVentilatorList"))
             {
-                double ls = Math.Round(Math.Round(Convert.ToDouble(GetCellValue("General", "H4")),1) * 0.47195,4);
-                vent.Add(
-                    new XElement("BaseVentilator",
-                    new XAttribute("supplyFlowrate", ls.ToString()),
-                    new XAttribute("exhaustFlowrate", ls.ToString()),
-                    new XAttribute("fanPower1", Math.Round(Convert.ToDouble(GetCellValue("General", "K4")),1).ToString()),
-                    new XAttribute("isDefaultFanpower", "false"),
-                    new XAttribute("isEnergyStar", "false"),
-                    new XAttribute("isHomeVentilatingInstituteCertified", "false"),
-                    new XAttribute("isSupplemental", "false"),
-                        new XElement("EquipmentInformation"),
-                        new XElement("VentilatorType", 
-                        new XAttribute("code", "4"),
-                            new XElement("English", "Utility"),
-                            new XElement("French", "Utilité"))));
+                double flowrate = Convert.ToDouble(GetCellValue("General", "H4"));
+                vent.Add(HRV.CreateFan(flowrate, GetCellValue("General", "K4")));
             }
             return house;
         }
