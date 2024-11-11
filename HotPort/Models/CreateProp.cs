@@ -410,7 +410,7 @@ namespace HotPort
 
             if (Convert.ToDouble(GetCellValue("General", "B4")) > 0)
             {
-                furnaceModel += $" &  {GetCellValue("Summary", "B79")}";
+                furnaceModel += $" & {GetCellValue("Summary", "B79")}";
             }
             // Changes furnace output capacity and EF values
             foreach (XElement furn in newHouse.Descendants("Furnace"))

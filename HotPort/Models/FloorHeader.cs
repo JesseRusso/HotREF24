@@ -5,7 +5,6 @@ namespace HotPort
 {
     internal static class FloorHeader
     {
-
         public static XElement NewJoist(string height, string rsi, string length, string id)
         {
             string Height = Math.Round(Convert.ToDouble(height) * 0.3048, 3).ToString();
