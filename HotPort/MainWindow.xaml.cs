@@ -15,14 +15,14 @@ namespace HotPort
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow 
 
     {
         XDocument? propHouse;
         private XDocument? newHouse;
         public string? templatePath;
         string? excelFilePath;
-        private string proposedAddress;
+        private string? proposedAddress;
         private string? directoryString;
         public string? ExcelPath { get; private set; }
         private XElement[] profiles;
@@ -147,6 +147,8 @@ namespace HotPort
             CreateProp cp = new CreateProp(excelFilePath, template);
             CreateProp.FindID(template);
             CreateProp.ChangeAddress(proposedAddress);
+
+            cp.ExtractWindows();
 
             try { cp.ChangeEquipment(); }
             catch

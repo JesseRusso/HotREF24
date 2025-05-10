@@ -41,10 +41,15 @@ namespace HotPort
                 string[] codeStrings = code.Split(' ');
                 codeIDs.Add(codeStrings[1]);
             }
+            codeIDs.Sort();
             codeID = int.Parse(codeIDs.Last()) +1;
             ExcelFilePath = excelPath;
             UpdateValues(profile);
         }
+        /**
+         * Updates the  
+         * 
+         */
         public void UpdateValues(XElement zoneValues)
         {
             CeilingRSI = zoneValues.Element("CeilingRSI").Value;

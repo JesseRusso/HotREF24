@@ -24,6 +24,7 @@ namespace HotPort
         public static string flatCeilingRValue;
         public static int ceilingCount = 1;
         private static bool basementPresent = true;
+        private static int maxWindowRow = 62;
 
         public CreateProp(string excelFilePath, XDocument template)
         {
@@ -37,7 +38,10 @@ namespace HotPort
             return newHouse;
         }
 
-        //Finds the largest component ID in the template and stores it to increment from
+        /**
+         * Finds the largest component ID in the template and stores it. 
+         * New components such as windows and doors are assigned new IDs that must not conflict with existing IDs
+         */
         public static void FindID(XDocument newHouse)
         {
             List<string> ids = new();
@@ -54,7 +58,7 @@ namespace HotPort
             maxID = idList.Max() + 1;
             ids.Clear();
         }
-        //This method gets the builder name 
+        //Gets the builder name 
         private static void GetBuilder()
         {
             string builderName = (from el in newHouse.Descendants("File").Descendants("BuilderName")
@@ -800,15 +804,16 @@ namespace HotPort
             int startRow = 22;
             int endRow = 33;
             int currentRow = startRow;
-            string name;
-            string corners;
-            string intersections;
-            string height;
-            string perim;
 
             for (int i = startRow; i <= endRow; i++)
             {
+                string name;
+                string corners;
+                string intersections;
+                string height;
+                string perim;
                 string currentCell = column + currentRow.ToString();
+
                 if ((GetCellValue("Calc", currentCell) != null) && double.Parse(GetCellValue("Calc", currentCell)) > 0)
                 {
                     perim = GetCellValue("Calc", currentCell);
@@ -832,6 +837,62 @@ namespace HotPort
                     i += 2;
                 }
             }
+        }
+        /**
+         * 
+         * 
+         */
+        public void ExtractWindows()
+        {
+            List<Window> windows = new List<Window>();
+            for(int i = 2; i <= maxWindowRow; i++)
+            {
+                string? name = GetCellValue("Windows", "A" + i);
+                if (name != null && name != string.Empty && GetCellValue("Windows", "F" + i).ToLower() != "door")
+                {
+                    int width = int.Parse(GetCellValue("Windows", "B" + i));
+                    int height = int.Parse(GetCellValue("Windows", "C" + i));
+                    double uValue = double.Parse(GetCellValue("Windows", "D" + i).ToString());
+                    double shgc = double.Parse(GetCellValue("Windows", "E" + i));
+                    int floor = int.Parse(GetCellValue("Windows", "G" + i));
+
+                    Window window = new Window(name, width, height, uValue, shgc, floor, maxID, GetMaxCodeID());
+                    windows.Add(window);
+                    maxID++;
+                }
+            }
+            foreach (Window window in windows)
+            {
+                window.AddWindow(newHouse);
+            }
+        }
+
+        /**
+         * Gets the highest value codeId from the Codes element in the house file
+         * 
+         * Returns the highest code incremented by 1
+         */
+        public int GetMaxCodeID()
+        {
+            XElement? codesBLock = newHouse?.Root?.Element("Codes");
+            IEnumerable<XElement>? codes = codesBLock?.Descendants("Code");
+            IEnumerable<XElement>? windowCodes = codes?.Descendants("Window");
+
+            if (windowCodes != null && windowCodes.Any())
+            {
+                return int.Parse(windowCodes.First().Attribute("id").Value);
+            }
+
+            return codes.Count() + 1;
+
+            //List<int> ids = new List<int>();
+            //foreach(XElement code in codes)
+            //{
+            //    string? idString = code.Attribute("id")?.Value;
+            //    int id = int.Parse(idString.Split(" ")[1]);
+            //    ids.Add(id);
+            //}
+            //return ids.Max() + 1;
         }
 
         //Method to get the value of single cells from Excel worksheet
@@ -884,7 +945,6 @@ namespace HotPort
                             }
                         }
                     }
-
                 }
                 fs.Close();
             }return value;

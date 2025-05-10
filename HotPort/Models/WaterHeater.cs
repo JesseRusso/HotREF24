@@ -170,7 +170,7 @@ namespace HotPort
             {
                 tankOrder = "Secondary";
             }
-            XElement hw = (from el in CreateProp.newHouse.Descendants("Components").Descendants("HotWater")
+            XElement ? hw = (from el in CreateProp.newHouse.Descendants("Components").Descendants("HotWater")
                            select el).FirstOrDefault();
             hw?.Add(
                 new XElement(tankOrder,
@@ -212,17 +212,17 @@ namespace HotPort
 
             if (energySourceCode == "2")
             {
-                hw.Element(tankOrder).SetAttributeValue("pilotEnergy", "0");
+                hw?.Element(tankOrder)?.SetAttributeValue("pilotEnergy", "0");
             }
             if (UEF)
             {
-                hw.Element(tankOrder).Element("EnergyFactor").AddAfterSelf(SetUEF());
+                hw?.Element(tankOrder)?.Element("EnergyFactor")?.AddAfterSelf(SetUEF());
             }
             if (!primary)
             {
-                hw.Element("Primary").Add(
+                hw?.Element("Primary")?.Add(
                     new XAttribute("fraction", "0.75"));
-                hw.Element("Secondary").Add(
+                hw?.Element("Secondary")?.Add(
                     new XAttribute("fraction", "0.25"));
             }
         }
