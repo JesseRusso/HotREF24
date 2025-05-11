@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:HotPort"
+        xmlns:properties="clr-namespace:HotPort.Properties"
         mc:Ignorable="d"
         Title="HotREF" Height="400" Width="360" WindowStyle="SingleBorderWindow" Closing="Window_Closing" ResizeMode="NoResize">
     <Grid x:Name="grid" HorizontalAlignment="Center" Width="360" Margin="0,0,0,0" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
@@ -16,8 +16,9 @@
             <RowDefinition />
         </Grid.RowDefinitions>
         <Button x:Name="WorksheetButton" Content="Select Worksheet" HorizontalAlignment="Center" Margin="0,35,0,0" VerticalAlignment="Top" Width="320" Height="20" Click="WorksheetButton_Click"/>
-        <Button x:Name="TemplateButton" Content="Select Template" HorizontalAlignment="Center" Margin="0,36,0,0" VerticalAlignment="Top" Width="320" Grid.Row="1" Height="20" Click="TemplateButton_Click"/>
-        <Button x:Name="CreatePropButton" Content="Create Proposed File" HorizontalAlignment="Center" Margin="0,81,0,10" VerticalAlignment="Bottom" Width="320" Height="20" Grid.Row="1" Click="CreatePropButton_Click"/>
+        <Button x:Name="TemplateButton" Content="Select Template" HorizontalAlignment="Left" Margin="20,31,0,0" VerticalAlignment="Top" Width="190" Grid.Row="1" Height="20" Click="TemplateButton_Click"/>
+        <Button x:Name="CreatePropButton" Content="Create Proposed File" HorizontalAlignment="Center" Margin="0,99,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.Row="1" Click="CreatePropButton_Click"/>
+        <CheckBox x:Name="WindowCheckbox" Content="Include Windows" Grid.Row="1" Margin="230,35,10,76" IsChecked="{Binding Source={x:Static properties:Settings.Default},Path=WindowsCheckbox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
         <Button x:Name="CreateRefButton" Content="Create REF" HorizontalAlignment="Center" Width="320" Grid.Row="2" Height="20" VerticalAlignment="Top" Click="CreateRefButton_Click" Margin="0,120,0,0"/>
         <TextBlock x:Name="worksheetTextBlock" HorizontalAlignment="Left" Margin="20,60,0,0" TextWrapping="Wrap" Text="No worksheet selected" VerticalAlignment="Top" Width="190" RenderTransformOrigin="0.5,0.692"/>
         <Button x:Name="SelectPropFileButton" Content="Select Proposed File" HorizontalAlignment="Left" Margin="20,50,0,0" VerticalAlignment="Top" Width="240" Height="20" Grid.Row="2" Click="SelectPropFileButton_Click"/>

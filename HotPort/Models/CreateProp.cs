@@ -26,12 +26,14 @@ namespace HotPort
         private static bool basementPresent = true;
         private static int maxWindowRow = 62;
 
+
         public CreateProp(string excelFilePath, XDocument template)
         {
             filePath = excelFilePath;
             newHouse = new XDocument(template);
             GetBuilder();
             CityCheck();
+            FindID(template);
         }
         public static XDocument GetHouse()
         {
@@ -855,46 +857,30 @@ namespace HotPort
                     double uValue = double.Parse(GetCellValue("Windows", "D" + i).ToString());
                     double shgc = double.Parse(GetCellValue("Windows", "E" + i));
                     int floor = int.Parse(GetCellValue("Windows", "G" + i));
+                    double overhang = double.Parse(GetCellValue("Calc", "M52"));
 
-                    Window window = new Window(name, width, height, uValue, shgc, floor, maxID, GetMaxCodeID());
+                    Window window = new Window(name, width, height, uValue, shgc, floor, overhang, maxID);
                     windows.Add(window);
+                    window.codeId = CodeTools.FindWindowCode(newHouse, window);
+                    window.AddWindow(newHouse);
                     maxID++;
                 }
-            }
-            foreach (Window window in windows)
-            {
-                window.AddWindow(newHouse);
             }
         }
 
         /**
-         * Gets the highest value codeId from the Codes element in the house file
-         * 
-         * Returns the highest code incremented by 1
+         * Removes all windows that aren't a part of door assemblies.
          */
-        public int GetMaxCodeID()
+        public void RemoveWindows()
         {
-            XElement? codesBLock = newHouse?.Root?.Element("Codes");
-            IEnumerable<XElement>? codes = codesBLock?.Descendants("Code");
-            IEnumerable<XElement>? windowCodes = codes?.Descendants("Window");
-
-            if (windowCodes != null && windowCodes.Any())
+            List<XElement>? windows = newHouse?.Root?.Element("House")?.Descendants("Window").
+                            Where(el => !el.Ancestors("Door").Any() && el != null).
+                            ToList();
+            foreach (XElement window in windows)
             {
-                return int.Parse(windowCodes.First().Attribute("id").Value);
+                window.Remove();
             }
-
-            return codes.Count() + 1;
-
-            //List<int> ids = new List<int>();
-            //foreach(XElement code in codes)
-            //{
-            //    string? idString = code.Attribute("id")?.Value;
-            //    int id = int.Parse(idString.Split(" ")[1]);
-            //    ids.Add(id);
-            //}
-            //return ids.Max() + 1;
         }
-
         //Method to get the value of single cells from Excel worksheet
         //Should probably fix this so that the file only opens once
         public static string GetCellValue(string sheetName, string refCell)

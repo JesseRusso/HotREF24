@@ -84,6 +84,7 @@ namespace HotPort
                 ProposedFileTextBlock.Text = proposedAddress;
             }
         }
+
         private void CreateRefButton_Click(object sender, RoutedEventArgs e)
         {
             if (propHouse == null)
@@ -145,10 +146,8 @@ namespace HotPort
             Cursor = Cursors.Wait;
             XDocument template = new XDocument(XDocument.Load(templatePath));
             CreateProp cp = new CreateProp(excelFilePath, template);
-            CreateProp.FindID(template);
+            //CreateProp.FindID(template);
             CreateProp.ChangeAddress(proposedAddress);
-
-            cp.ExtractWindows();
 
             try { cp.ChangeEquipment(); }
             catch
@@ -273,8 +272,13 @@ namespace HotPort
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            newHouse = CreateProp.GetHouse();
+            if (Properties.Settings.Default.WindowsCheckbox)
+            {
+                cp.RemoveWindows();
+                cp.ExtractWindows();
+            }
 
+            newHouse = CreateProp.GetHouse();
             Cursor = Cursors.Arrow;
             SaveFileDialog sfd = new SaveFileDialog
             {
@@ -286,7 +290,7 @@ namespace HotPort
 
             if (sfd.ShowDialog() == true)
             {
-                newHouse.Save(sfd.FileName);
+                newHouse.Save(sfd.FileName, SaveOptions.None);
             }
             template = null;
             templatePath = null;

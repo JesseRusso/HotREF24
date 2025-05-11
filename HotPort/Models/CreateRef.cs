@@ -32,23 +32,23 @@ namespace HotPort
 
         public CreateRef(XDocument house, string excelPath, XElement profile)
         {
-            List<string> codeIDs = new List<string>();
-            var hasCode = from el in house.Descendants("Codes").Descendants().Attributes("id")
-                          select el.Value;
+            //List<string> codeIDs = new List<string>();
+            //var hasCode = from el in house.Descendants("Codes").Descendants().Attributes("id")
+            //              select el.Value;
 
-            foreach(string code in hasCode)
-            {
-                string[] codeStrings = code.Split(' ');
-                codeIDs.Add(codeStrings[1]);
-            }
-            codeIDs.Sort();
-            codeID = int.Parse(codeIDs.Last()) +1;
+            //foreach(string code in hasCode)
+            //{
+            //    string[] codeStrings = code.Split(' ');
+            //    codeIDs.Add(codeStrings[1]);
+            //}
+            //codeIDs.Sort();
+            //codeID = int.Parse(codeIDs.Last()) +1;
+            CodeTools.GetValidCodeID(house);
             ExcelFilePath = excelPath;
             UpdateValues(profile);
         }
         /**
-         * Updates the  
-         * 
+         * Updates the reference fields to match the code requirements of the municipality 
          */
         public void UpdateValues(XElement zoneValues)
         {
@@ -85,6 +85,9 @@ namespace HotPort
             List<int> idList = ids.Select(s => int.Parse(s)).ToList();
             maxID = idList.Max() + 1;
         }
+        /**
+         * Removes all doors, windows, and HRV/Ventilators 
+         */
         public XDocument Remover(XDocument house)
         {
             house.Descendants("Door").Remove();
@@ -418,6 +421,9 @@ namespace HotPort
             }
             return house;
         }
+        /**
+         * Adds the ABCRef window code to the file 
+         */
         public XDocument AddCode(XDocument house)
             {
                 var codes = from el in house.Descendants()

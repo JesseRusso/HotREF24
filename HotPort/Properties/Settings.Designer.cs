@@ -58,5 +58,17 @@ namespace HotPort.Properties {
                 this["TemplateDir"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool WindowsCheckbox {
+            get {
+                return ((bool)(this["WindowsCheckbox"]));
+            }
+            set {
+                this["WindowsCheckbox"] = value;
+            }
+        }
     }
 }
