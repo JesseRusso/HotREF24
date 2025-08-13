@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <UseWPF>True</UseWPF>
     <Copyright>JesseRusso2024</Copyright>
-    <UseWindowsForms>False</UseWindowsForms>
     <PackageIcon>ico1.ico</PackageIcon>
     <ApplicationIcon>ico1.ico</ApplicationIcon>
     <AssemblyName>HotREF</AssemblyName>
@@ -14,11 +13,6 @@
     <AssemblyVersion>1.1</AssemblyVersion>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="MainForm.cs" />
-    <Compile Remove="MainForm.Designer.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <Content Include="ico1.ico" />
