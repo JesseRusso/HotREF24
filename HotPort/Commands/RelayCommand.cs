@@ -1,8 +1,12 @@
 using System;
 using System.Windows.Input;
 
-namespace HotPort.ViewModels
+namespace HotPort.Commands
 {
+    /// <summary>
+    /// A simple <see cref="ICommand"/> implementation that relays Execute and CanExecute
+    /// to provided delegates.
+    /// </summary>
     public class RelayCommand : ICommand
     {
         private readonly Action<object?> execute;

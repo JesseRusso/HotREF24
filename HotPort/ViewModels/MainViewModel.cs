@@ -1,19 +1,18 @@
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Xml.Linq;
 using HotPort.Properties;
+using HotPort.Commands;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 
 namespace HotPort.ViewModels
 {
-    public class MainViewModel : INotifyPropertyChanged
+    public class MainViewModel : BaseViewModel
     {
         private XDocument? propHouse;
         private XDocument? newHouse;
@@ -65,9 +64,6 @@ namespace HotPort.ViewModels
             SelectProposedFileCommand = new RelayCommand(_ => SelectProposedFile());
             SetDefaultDirectoryCommand = new RelayCommand(_ => SetDefaultDirectory());
         }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
         private void SelectWorksheet()
         {
