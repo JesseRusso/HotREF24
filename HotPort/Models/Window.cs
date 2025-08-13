@@ -75,19 +75,22 @@ namespace HotPort
         }
         public void AddWindow(XDocument house)
         {
-            XElement[]? walls = new XElement[4];
+            XElement[] walls = new XElement[4];
 
-            walls[0] = house?.Root?.Element("House")?.Element("Components")?.Element("Basement");
+            XElement? bsmt = house?.Root?.Element("House")?.Element("Components")?.Element("Basement");
+            XElement? first = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
+                                where el.Element("Label").Value.Contains("1")
+                                select el).FirstOrDefault();
+            XElement? second = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
+                                where el.Element("Label").Value.Contains("2")
+                                select el).FirstOrDefault();
+            XElement? third = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
+                               where el.Element("Label")?.Value.Contains("3") ?? false
+                               select el)?.FirstOrDefault();
 
-            walls[1] = (XElement)(from el in house.Root?.Element("House")?.Element("Components").Descendants("Wall")
-                                        where el.Element("Label").Value.Contains("1")
-                                        select el).FirstOrDefault();
-            walls[2] = (XElement)(from el in house.Root?.Element("House")?.Element("Components").Descendants("Wall")
-                                  where el.Element("Label").Value.Contains("2")
-                                  select el).FirstOrDefault();
-            XElement? third = (XElement)(from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
-                                         where el.Element("Label")?.Value.Contains("3") ?? false
-                                         select el)?.FirstOrDefault();
+            if(bsmt != null) walls[0] = bsmt;
+            if(first != null) walls[1] = first;
+            if(second != null) walls[2] = second;
             if(third != null) walls[3] = third;
             walls[_floor].Element("Components").AddFirst(getWindowBlock());
         }
