@@ -12,6 +12,7 @@
     <AssemblyName>HotREF</AssemblyName>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AssemblyVersion>1.1</AssemblyVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>

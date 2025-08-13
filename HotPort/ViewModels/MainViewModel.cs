@@ -7,8 +7,7 @@ using System.Windows.Input;
 using System.Xml.Linq;
 using HotPort.Properties;
 using HotPort.Commands;
-using Microsoft.Win32;
-using Ookii.Dialogs.Wpf;
+using HotPort.Services;
 
 namespace HotPort.ViewModels
 {
@@ -27,6 +26,8 @@ namespace HotPort.ViewModels
         private string proposedFileText = "No file selected";
         private readonly ObservableCollection<string> zones;
         private int selectedZoneIndex;
+        private readonly IFileDialogService fileDialogService;
+        private readonly IMessageService messageService;
 
         public string? TemplatePath { get => templatePath; set { templatePath = value; OnPropertyChanged(); } }
         public string? ExcelFilePath { get => excelFilePath; set { excelFilePath = value; OnPropertyChanged(); } }
@@ -49,8 +50,15 @@ namespace HotPort.ViewModels
         public ICommand SelectProposedFileCommand { get; }
         public ICommand SetDefaultDirectoryCommand { get; }
 
-        public MainViewModel()
+        public MainViewModel() : this(new FileDialogService(), new MessageService())
         {
+        }
+
+        public MainViewModel(IFileDialogService fileDialogService, IMessageService messageService)
+        {
+            this.fileDialogService = fileDialogService;
+            this.messageService = messageService;
+
             XDocument values = new XDocument(XDocument.Load(@".\\ReferenceProfiles.xml"));
             Profiles = (from el in values.Descendants("Zone")
                         select el).ToArray();
@@ -67,49 +75,34 @@ namespace HotPort.ViewModels
 
         private void SelectWorksheet()
         {
-            var ofd = new OpenFileDialog
+            var file = fileDialogService.OpenFile("Select worksheet", "Excel Files (*.xlsm) | *.xlsm");
+            if (file != null)
             {
-                Title = "Select worksheet",
-                Filter = "Excel Files (*.xlsm) | *.xlsm"
-            };
-
-            if (ofd.ShowDialog() == true)
-            {
-                ExcelFilePath = ofd.FileName;
-                WorksheetText = SplitAddress(ofd.FileName);
+                ExcelFilePath = file;
+                WorksheetText = SplitAddress(file);
                 ProposedAddress = WorksheetText;
             }
         }
 
         private void SelectProposedFile()
         {
-            var ofd = new OpenFileDialog
+            var file = fileDialogService.OpenFile("Select Proposed File", "House Files (*.h2k)|*.h2k");
+            if (file != null)
             {
-                Title = "Select Proposed File",
-                Filter = "House Files (*.h2k)|*.h2k"
-            };
-
-            if (ofd.ShowDialog() == true)
-            {
-                propHouse = XDocument.Load(ofd.FileName);
-                DirectoryString = Path.GetDirectoryName(ofd.FileName);
-                ProposedAddress = SplitAddress(Path.GetFileName(ofd.FileName));
+                propHouse = XDocument.Load(file);
+                DirectoryString = Path.GetDirectoryName(file);
+                ProposedAddress = SplitAddress(Path.GetFileName(file));
                 ProposedFileText = ProposedAddress;
             }
         }
 
         private void SelectTemplate()
         {
-            var ofd = new OpenFileDialog
+            var file = fileDialogService.OpenFile("Select HOT2000 builder template", "House Files(*.h2k) | *.h2k", Settings.Default.TemplateDir);
+            if (file != null)
             {
-                Title = "Select HOT2000 builder template",
-                Filter = "House Files(*.h2k) | *.h2k",
-                InitialDirectory = Settings.Default.TemplateDir,
-            };
-            if (ofd.ShowDialog() == true)
-            {
-                TemplatePath = ofd.FileName;
-                TemplateText = ofd.SafeFileName.Split('.').First();
+                TemplatePath = file;
+                TemplateText = Path.GetFileNameWithoutExtension(file);
             }
         }
 
@@ -117,11 +110,11 @@ namespace HotPort.ViewModels
         {
             if (propHouse == null)
             {
-                MessageBox.Show("You must select a proposed file first.", "No file selected", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                messageService.ShowMessage("You must select a proposed file first.", "No file selected", MessageBoxButton.OK, MessageBoxImage.Exclamation);
             }
             else if (ExcelFilePath == null)
             {
-                MessageBox.Show("You must select an Excel file first.", "No file selected", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                messageService.ShowMessage("You must select an Excel file first.", "No file selected", MessageBoxButton.OK, MessageBoxImage.Exclamation);
             }
             else
             {
@@ -140,18 +133,11 @@ namespace HotPort.ViewModels
                 propHouse = cr.HotWater(propHouse);
                 Mouse.OverrideCursor = null;
 
-                MessageBox.Show("Please save and check results", "REF changes made");
-                SaveFileDialog sfd = new SaveFileDialog
+                messageService.ShowMessage("Please save and check results", "REF changes made");
+                var saveFile = fileDialogService.SaveFile("Save Generated Reference House", "House File|*.h2k", DirectoryString, $"{ProposedAddress}-REFERENCE");
+                if (saveFile != null)
                 {
-                    Filter = "House File|*.h2k",
-                    DefaultExt = "h2k",
-                    InitialDirectory = DirectoryString,
-                    FileName = $"{ProposedAddress}-REFERENCE",
-                };
-
-                if (sfd.ShowDialog() == true)
-                {
-                    propHouse.Save(sfd.FileName);
+                    propHouse.Save(saveFile);
                 }
             }
         }
@@ -160,14 +146,14 @@ namespace HotPort.ViewModels
         {
             if (TemplatePath == null)
             {
-                MessageBox.Show("Select a builder template to modify",
+                messageService.ShowMessage("Select a builder template to modify",
                     "No builder template selected",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             if (ExcelFilePath == null)
             {
-                MessageBox.Show("Select a spreadsheet to copy from.",
+                messageService.ShowMessage("Select a spreadsheet to copy from.",
                     "No spreadsheet selected",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -181,7 +167,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("There was an error. Check furnace and HRV values in excel.",
+                messageService.ShowMessage("There was an error. Check furnace and HRV values in excel.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -190,7 +176,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Unexpected value in A/C selection.",
+                messageService.ShowMessage("Unexpected value in A/C selection.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -199,7 +185,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("There was an error. Check for typos in intersections/corners and volume/highest ceiling.",
+                messageService.ShowMessage("There was an error. Check for typos in intersections/corners and volume/highest ceiling.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -208,7 +194,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("There was an error. Check for typos in above grade walls and check that the H2K template has all required elements.",
+                messageService.ShowMessage("There was an error. Check for typos in above grade walls and check that the H2K template has all required elements.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -217,7 +203,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("There was an error retrieving ceiling data from the template. Check that the H2K template has the required ceilings.",
+                messageService.ShowMessage("There was an error retrieving ceiling data from the template. Check that the H2K template has the required ceilings.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -226,7 +212,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Error either retrieving floor R values from template, or adding garage floor. Template should have 2 exposed floors with 'cant' and 'garage' in their names",
+                messageService.ShowMessage("Error either retrieving floor R values from template, or adding garage floor. Template should have 2 exposed floors with 'cant' and 'garage' in their names",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -235,7 +221,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Unexpected value while adding floors. Have a typo in the EXPOSED FLOORS section?",
+                messageService.ShowMessage("Unexpected value while adding floors. Have a typo in the EXPOSED FLOORS section?",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -244,7 +230,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Unexpected value while adding ceilings. Have a typo in the FLAT CEILINGS section?",
+                messageService.ShowMessage("Unexpected value while adding ceilings. Have a typo in the FLAT CEILINGS section?",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -253,7 +239,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Unexpected value while adding vaults. Have a typo in the VAULTS section?",
+                messageService.ShowMessage("Unexpected value while adding vaults. Have a typo in the VAULTS section?",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -262,7 +248,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Unexpected value while adding walls. Have a typo in the ABOVE GRADE WALLS section?",
+                messageService.ShowMessage("Unexpected value while adding walls. Have a typo in the ABOVE GRADE WALLS section?",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -271,7 +257,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Error while changing basement. Check template has required basement elements then check spreadsheet for typos.",
+                messageService.ShowMessage("Error while changing basement. Check template has required basement elements then check spreadsheet for typos.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -280,7 +266,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Error while changing GAS DHW Check for typos in GAS DHW section.",
+                messageService.ShowMessage("Error while changing GAS DHW Check for typos in GAS DHW section.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -289,7 +275,7 @@ namespace HotPort.ViewModels
             catch
             {
                 Mouse.OverrideCursor = null;
-                MessageBox.Show("Error while changing ELECTRIC DHW Check for typos in ELECTRIC DHW section.",
+                messageService.ShowMessage("Error while changing ELECTRIC DHW Check for typos in ELECTRIC DHW section.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -302,17 +288,10 @@ namespace HotPort.ViewModels
 
             newHouse = CreateProp.GetHouse();
             Mouse.OverrideCursor = null;
-            SaveFileDialog sfd = new SaveFileDialog
+            var savePath = fileDialogService.SaveFile("Save Generated Proposed House", " H2K files (*.h2k)| *.h2k", Path.GetDirectoryName(ExcelFilePath), $"{ProposedAddress}-PROPOSED");
+            if (savePath != null)
             {
-                Title = "Save Generated Proposed House",
-                Filter = " H2K files (*.h2k)| *.h2k",
-                InitialDirectory = Path.GetDirectoryName(ExcelFilePath),
-                FileName = $"{ProposedAddress}-PROPOSED",
-            };
-
-            if (sfd.ShowDialog() == true)
-            {
-                newHouse.Save(sfd.FileName, SaveOptions.None);
+                newHouse.Save(savePath, SaveOptions.None);
             }
             template = null;
             TemplatePath = null;
@@ -348,11 +327,10 @@ namespace HotPort.ViewModels
 
         private void SetDefaultDirectory()
         {
-            VistaFolderBrowserDialog fbd = new VistaFolderBrowserDialog();
-
-            if (fbd.ShowDialog() == true)
+            var folder = fileDialogService.SelectFolder();
+            if (folder != null)
             {
-                Settings.Default.TemplateDir = fbd.SelectedPath;
+                Settings.Default.TemplateDir = folder;
                 Settings.Default.Save();
             }
         }
