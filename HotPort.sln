@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HotPort", "HotPort\HotPort.csproj", "{5C810585-0573-42B7-AB1B-878BB4B0517C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HotPort.Tests", "HotPort.Tests\HotPort.Tests.csproj", "{C1EDD98F-E038-445B-899A-00E28B9E79A0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,9 +15,13 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5C810585-0573-42B7-AB1B-878BB4B0517C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5C810585-0573-42B7-AB1B-878BB4B0517C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5C810585-0573-42B7-AB1B-878BB4B0517C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5C810585-0573-42B7-AB1B-878BB4B0517C}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
+                {5C810585-0573-42B7-AB1B-878BB4B0517C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                {5C810585-0573-42B7-AB1B-878BB4B0517C}.Release|Any CPU.Build.0 = Release|Any CPU
+                {C1EDD98F-E038-445B-899A-00E28B9E79A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                {C1EDD98F-E038-445B-899A-00E28B9E79A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                {C1EDD98F-E038-445B-899A-00E28B9E79A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                {C1EDD98F-E038-445B-899A-00E28B9E79A0}.Release|Any CPU.Build.0 = Release|Any CPU
+        EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
