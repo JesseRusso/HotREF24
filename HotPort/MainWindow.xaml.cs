@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using HotPort.Properties;
+using HotPort.ViewModels;
 
 namespace HotPort
 {
@@ -33,7 +34,15 @@ namespace HotPort
         {
             Settings.Default.WindowLeft = this.Left;
             Settings.Default.WindowTop = this.Top;
-            Settings.Default.Save();
+
+            if (DataContext is MainViewModel vm && vm.SaveSettingsCommand.CanExecute(null))
+            {
+                vm.SaveSettingsCommand.Execute(null);
+            }
+            else
+            {
+                Settings.Default.Save();
+            }
         }
     }
 }

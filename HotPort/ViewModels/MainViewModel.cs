@@ -28,6 +28,8 @@ namespace HotPort.ViewModels
         private int selectedZoneIndex;
         private readonly IFileDialogService fileDialogService;
         private readonly IMessageService messageService;
+        private string? templateDir;
+        private bool windowsCheckbox;
 
         public string? TemplatePath { get => templatePath; set { templatePath = value; OnPropertyChanged(); } }
         public string? ExcelFilePath { get => excelFilePath; set { excelFilePath = value; OnPropertyChanged(); } }
@@ -39,6 +41,8 @@ namespace HotPort.ViewModels
         public string WorksheetText { get => worksheetText; set { worksheetText = value; OnPropertyChanged(); } }
         public string TemplateText { get => templateText; set { templateText = value; OnPropertyChanged(); } }
         public string ProposedFileText { get => proposedFileText; set { proposedFileText = value; OnPropertyChanged(); } }
+        public string? TemplateDir { get => templateDir; set { templateDir = value; OnPropertyChanged(); } }
+        public bool WindowsCheckbox { get => windowsCheckbox; set { windowsCheckbox = value; OnPropertyChanged(); } }
 
         public ObservableCollection<string> Zones => zones;
         public int SelectedZoneIndex { get => selectedZoneIndex; set { selectedZoneIndex = value; OnPropertyChanged(); } }
@@ -49,6 +53,7 @@ namespace HotPort.ViewModels
         public ICommand CreateRefCommand { get; }
         public ICommand SelectProposedFileCommand { get; }
         public ICommand SetDefaultDirectoryCommand { get; }
+        public ICommand SaveSettingsCommand { get; }
 
         public MainViewModel() : this(new FileDialogService(), new MessageService())
         {
@@ -65,12 +70,16 @@ namespace HotPort.ViewModels
             zones = new ObservableCollection<string>(Profiles.Select(z => z.Attribute("name")?.Value ?? string.Empty));
             selectedZoneIndex = 0;
 
+            TemplateDir = Settings.Default.TemplateDir;
+            WindowsCheckbox = Settings.Default.WindowsCheckbox;
+
             SelectWorksheetCommand = new RelayCommand(_ => SelectWorksheet());
             SelectTemplateCommand = new RelayCommand(_ => SelectTemplate());
             CreateProposedFileCommand = new RelayCommand(_ => CreateProposedFile());
             CreateRefCommand = new RelayCommand(_ => CreateRef());
             SelectProposedFileCommand = new RelayCommand(_ => SelectProposedFile());
             SetDefaultDirectoryCommand = new RelayCommand(_ => SetDefaultDirectory());
+            SaveSettingsCommand = new RelayCommand(_ => SaveSettings());
         }
 
         private void SelectWorksheet()
@@ -98,7 +107,7 @@ namespace HotPort.ViewModels
 
         private void SelectTemplate()
         {
-            var file = fileDialogService.OpenFile("Select HOT2000 builder template", "House Files(*.h2k) | *.h2k", Settings.Default.TemplateDir);
+            var file = fileDialogService.OpenFile("Select HOT2000 builder template", "House Files(*.h2k) | *.h2k", TemplateDir);
             if (file != null)
             {
                 TemplatePath = file;
@@ -280,7 +289,7 @@ namespace HotPort.ViewModels
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            if (Settings.Default.WindowsCheckbox)
+            if (WindowsCheckbox)
             {
                 cp.RemoveWindows();
                 cp.ExtractWindows();
@@ -330,9 +339,16 @@ namespace HotPort.ViewModels
             var folder = fileDialogService.SelectFolder();
             if (folder != null)
             {
-                Settings.Default.TemplateDir = folder;
-                Settings.Default.Save();
+                TemplateDir = folder;
+                SaveSettings();
             }
+        }
+
+        private void SaveSettings()
+        {
+            Settings.Default.TemplateDir = TemplateDir;
+            Settings.Default.WindowsCheckbox = WindowsCheckbox;
+            Settings.Default.Save();
         }
     }
 }
