@@ -1,12 +1,10 @@
 ﻿//Created by Jesse Russo 2021
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
-using System.Text.RegularExpressions;
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using HotPort.Services;
 
 namespace HotPort
 {
@@ -881,59 +879,9 @@ namespace HotPort
                 window.Remove();
             }
         }
-        //Method to get the value of single cells from Excel worksheet
-        //Should probably fix this so that the file only opens once
-        public static string GetCellValue(string sheetName, string refCell)
+        private static string GetCellValue(string sheetName, string refCell)
         {
-            string? value = null;
-
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (SpreadsheetDocument spreadsheet = SpreadsheetDocument.Open(fs, false))
-                {
-                    WorkbookPart? wbPart = spreadsheet.WorkbookPart;
-                    Sheet? theSheet = wbPart?.Workbook.Descendants<Sheet>().
-                        Where(s => s.Name == sheetName).FirstOrDefault();
-                    if (theSheet == null)
-                    {
-                        throw new ArgumentException(null, nameof(sheetName));
-                    }
-                    WorksheetPart wsPart = (WorksheetPart)wbPart!.GetPartById(theSheet.Id!);
-
-                    Cell? theCell = wsPart.Worksheet?.Descendants<Cell>()?.
-                        Where(c => c.CellReference == refCell).FirstOrDefault();
-                    if (theCell is null || theCell.InnerText.Length < 0)
-                    {
-                        return string.Empty;
-                    }
-                    value = theCell?.CellValue?.InnerText;
-
-                    if (theCell?.DataType != null)
-                    {
-                        if (theCell.DataType.Value == CellValues.SharedString)
-                        {
-                            var stringTable = wbPart.GetPartsOfType<SharedStringTablePart>().FirstOrDefault();
-                            if (stringTable is not null)
-                            {
-                                value = stringTable.SharedStringTable.ElementAt(int.Parse(value)).InnerText;
-                            }
-                        }
-                        else if (theCell.DataType.Value == CellValues.Boolean)
-                        {
-                            switch (value)
-                            {
-                                case "0":
-                                    value = "FALSE";
-                                    break;
-                                default:
-                                    value = "TRUE";
-                                    break;
-                            }
-                        }
-                    }
-                }
-                fs.Close();
-            }return value;
+            return ExcelHelper.GetCellValue(filePath, sheetName, refCell);
         }
         //stolen regex to separate filename into an address
         static string CamelCaseToSpaceSeparated(string text)
