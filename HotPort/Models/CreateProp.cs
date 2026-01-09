@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
+using HotPort.Models;
 
 namespace HotPort
 {
@@ -609,6 +610,9 @@ namespace HotPort
                         case "y":
                             houseType.SetAttributeValue("code", "2");
                             break;
+                        default:
+                            houseType.SetAttributeValue("code", "1");
+                            break;
                     }
                 }
             }
@@ -624,8 +628,8 @@ namespace HotPort
         }
         public void ChangeFloors()
         {
-            double garFlrArea = Convert.ToDouble(GetCellValue("Calc", "P21"));
-            double garFlrLength = Convert.ToDouble(GetCellValue("Calc", "O21"));
+            double garFlrArea, garFlrLength;
+            bool garPresent = Double.TryParse(GetCellValue("Calc", "P21"), out double area) && area > 0;
 
             XElement garFlr = (XElement)(from el in newHouse.Descendants("Floor")
                                          where el.Element("Label").Value.ToLower().Contains("garage")
@@ -638,11 +642,14 @@ namespace HotPort
             floorRValue = floor.Element("Construction")?.Element("Type")?.Attribute("rValue")?.Value.ToString();
             floor.Remove();
 
-            if ((GetCellValue("Calc", "P21") != null) && (double.Parse(GetCellValue("Calc", "P21")) > 0))
+            if (garPresent)
             {
+                garFlrArea = Convert.ToDouble(GetCellValue("Calc", "P21"));
+                garFlrLength = Convert.ToDouble(GetCellValue("Calc", "O21"));
                 garFlr.Element("Measurements")?.SetAttributeValue("area", Math.Round(garFlrArea * 0.092903, 4));
                 garFlr.Element("Measurements")?.SetAttributeValue("length", Math.Round(garFlrLength * 0.3048, 4));
                 garFlr.Element("Label")?.SetValue(GetCellValue("Calc", "L21"));
+ 
             }
             else
             {
@@ -662,7 +669,9 @@ namespace HotPort
             for (int i = startRow; i <= endRow; i++)
             {
                 string currentCell = column + currentRow.ToString();
-                if ((GetCellValue("Calc", currentCell) != null) && double.Parse(GetCellValue("Calc", currentCell)) > 0)
+                string cellValue = GetCellValue("Calc", currentCell);
+                if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
+
                 {
                     area = GetCellValue("Calc", currentCell);
                     length = GetCellValue("Calc", "O" + currentRow);
@@ -690,7 +699,8 @@ namespace HotPort
             for (int i = startRow; i <= endRow; i++)
             {
                 string currentCell = column + currentRow.ToString();
-                if ((GetCellValue("Calc", currentCell) != null) && double.Parse(GetCellValue("Calc", currentCell)) > 0)
+                string cellValue = GetCellValue("Calc", currentCell);
+                if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
                 {
                     area = GetCellValue("Calc", currentCell);
                     length = GetCellValue("Calc", "D" + currentRow);
@@ -728,7 +738,8 @@ namespace HotPort
             for (int i = startRow; i <= endRow; i++)
             {
                 string currentCell = column + currentRow.ToString();
-                if ((GetCellValue("Calc", currentCell) != null) && double.Parse(GetCellValue("Calc", currentCell)) > 0)
+                string cellValue = GetCellValue("Calc", currentCell);
+                if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
                 {
                     area = GetCellValue("Calc", currentCell);
                     length = GetCellValue("Calc", "L" + currentRow);
@@ -815,8 +826,9 @@ namespace HotPort
                 string height;
                 string perim;
                 string currentCell = column + currentRow.ToString();
+                string cellValue = GetCellValue("Calc", currentCell);
 
-                if ((GetCellValue("Calc", currentCell) != null) && double.Parse(GetCellValue("Calc", currentCell)) > 0)
+                if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
                 {
                     perim = GetCellValue("Calc", currentCell);
                     height = GetCellValue("Calc", "G" + currentRow);
@@ -841,8 +853,7 @@ namespace HotPort
             }
         }
         /**
-         * 
-         * 
+         * Extracts window information and adds windows and codes to house file
          */
         public void ExtractWindows()
         {
@@ -859,7 +870,7 @@ namespace HotPort
                     int floor = int.Parse(GetCellValue("Windows", "G" + i));
                     double overhang = double.Parse(GetCellValue("Calc", "M52"));
 
-                    Window window = new Window(name, width, height, uValue, shgc, floor, overhang, maxID);
+                    Window window = new (name, width, height, uValue, shgc, floor, overhang, maxID);
                     windows.Add(window);
                     window.codeId = CodeTools.FindWindowCode(newHouse, window);
                     window.AddWindow(newHouse);
@@ -881,59 +892,9 @@ namespace HotPort
                 window.Remove();
             }
         }
-        //Method to get the value of single cells from Excel worksheet
-        //Should probably fix this so that the file only opens once
         public static string GetCellValue(string sheetName, string refCell)
         {
-            string? value = null;
-
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (SpreadsheetDocument spreadsheet = SpreadsheetDocument.Open(fs, false))
-                {
-                    WorkbookPart? wbPart = spreadsheet.WorkbookPart;
-                    Sheet? theSheet = wbPart?.Workbook.Descendants<Sheet>().
-                        Where(s => s.Name == sheetName).FirstOrDefault();
-                    if (theSheet == null)
-                    {
-                        throw new ArgumentException(null, nameof(sheetName));
-                    }
-                    WorksheetPart wsPart = (WorksheetPart)wbPart!.GetPartById(theSheet.Id!);
-
-                    Cell? theCell = wsPart.Worksheet?.Descendants<Cell>()?.
-                        Where(c => c.CellReference == refCell).FirstOrDefault();
-                    if (theCell is null || theCell.InnerText.Length < 0)
-                    {
-                        return string.Empty;
-                    }
-                    value = theCell?.CellValue?.InnerText;
-
-                    if (theCell?.DataType != null)
-                    {
-                        if (theCell.DataType.Value == CellValues.SharedString)
-                        {
-                            var stringTable = wbPart.GetPartsOfType<SharedStringTablePart>().FirstOrDefault();
-                            if (stringTable is not null)
-                            {
-                                value = stringTable.SharedStringTable.ElementAt(int.Parse(value)).InnerText;
-                            }
-                        }
-                        else if (theCell.DataType.Value == CellValues.Boolean)
-                        {
-                            switch (value)
-                            {
-                                case "0":
-                                    value = "FALSE";
-                                    break;
-                                default:
-                                    value = "TRUE";
-                                    break;
-                            }
-                        }
-                    }
-                }
-                fs.Close();
-            }return value;
+            return ExcelHelper.GetCellValue(filePath, sheetName, refCell);
         }
         //stolen regex to separate filename into an address
         static string CamelCaseToSpaceSeparated(string text)

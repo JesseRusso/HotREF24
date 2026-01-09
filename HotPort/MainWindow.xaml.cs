@@ -207,7 +207,7 @@ namespace HotPort
                 return;
             }
             try { cp.ExtraFloors(); }
-            catch
+             catch
             {
                 Cursor = Cursors.Arrow;
                 MessageBox.Show("Unexpected value while adding floors. Have a typo in the EXPOSED FLOORS section?",

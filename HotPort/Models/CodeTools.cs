@@ -46,7 +46,7 @@ namespace HotPort
                     new XElement("Layers",
                         new XElement("WindowLegacy",
                         new XAttribute("frameHeight", "0"),
-                        new XAttribute("shgc", "0.5"),
+                        new XAttribute("shgc", window.Shgc),
                         new XAttribute("rank", "1"),
                         new XElement("Type",
                             new XAttribute("code", "1"),
@@ -63,34 +63,21 @@ namespace HotPort
          */
         public static int GetValidCodeID(XDocument house)
         {
-            List<string> codeIDs = new List<string>();
+            List<int> codeIDs = new List<int>();
             var hasCode = from el in house.Descendants("Codes").Descendants().Attributes("id")
                           select el.Value;
 
             foreach (string code in hasCode)
             {
                 string[] codeStrings = code.Split(' ');
-                codeIDs.Add(codeStrings[1]);
+                codeIDs.Add(int.Parse(codeStrings[1]));
             }
             codeIDs.Sort();
-            return int.Parse(codeIDs.Last()) + 1;
-        }
-        public static int GetMaxWindowCodeID(XDocument house)
-        {
-            XElement? codesBLock = house?.Root?.Element("Codes");
-            IEnumerable<XElement>? codes = codesBLock?.Descendants("Code");
-            IEnumerable<XElement>? windowCodes = codes?.Descendants("Window");
-
-            if (windowCodes != null && windowCodes.Any())
-            {
-                return int.Parse(windowCodes.First().Attribute("id").Value);
-            }
-
-            return codes.Count() + 1;
+            return codeIDs.Last() + 1;
         }
         /**
          * Searches the <Codes></Codes> block for existing window codes that match the one specified by the window
-         * Adds the code to the <Codes></Codes> block if it doesn't exist
+         * Adds the code to the <Codes></Codes> block if it doesn't 
          */
         public static int FindWindowCode(XDocument house, Window window)
         {

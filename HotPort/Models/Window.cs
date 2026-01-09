@@ -11,7 +11,7 @@ namespace HotPort
         private double _width;
         private double _height;
         private double _rsi;
-        private double _shgc;
+        private string _shgc;
         private int _id;
         private int _codeId;
         private int _floor;
@@ -21,7 +21,7 @@ namespace HotPort
         public double Width { get { return _width; } }
         public double Height { get { return _height; } }
         public double RSI { get { return _rsi; } }
-        public double Shgc { get { return _shgc; } }
+        public string Shgc { get { return _shgc; } }
         public int Id { get { return _id;} }
         public int codeId { get { return _codeId;} set { _codeId = value; } }
         public int floor { get { return _floor; } }
@@ -32,7 +32,7 @@ namespace HotPort
             _name = name;
             _width = Math.Round(width * 25.4, 6);
             _height = Math.Round(height * 25.4, 6);
-            _shgc = Math.Round(shgc, 2);
+            _shgc = Math.Round(shgc * 100, 2).ToString();
             _id = id;
             _floor = floor;
             _rsi = Math.Round((1 / uValue), 4);
@@ -96,7 +96,7 @@ namespace HotPort
         }
         public override string ToString()
         {
-            return $"u{_uValue}shg{Math.Round(Shgc * 100,2)}";
+            return $"u{_uValue}shg{_shgc}";
         }
 
     }

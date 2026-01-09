@@ -1,11 +1,12 @@
 ﻿//Created by Jesse Russo 2019
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using HotPort.Models;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Xml.Linq;
 
 namespace HotPort
 {
@@ -28,21 +29,10 @@ namespace HotPort
         private string defaultUsageBin = "4";
         private int maxID;
         private int codeID = 3;
-        private string ExcelFilePath {get; set;}
+        private static string ExcelFilePath {get; set;}
 
         public CreateRef(XDocument house, string excelPath, XElement profile)
         {
-            //List<string> codeIDs = new List<string>();
-            //var hasCode = from el in house.Descendants("Codes").Descendants().Attributes("id")
-            //              select el.Value;
-
-            //foreach(string code in hasCode)
-            //{
-            //    string[] codeStrings = code.Split(' ');
-            //    codeIDs.Add(codeStrings[1]);
-            //}
-            //codeIDs.Sort();
-            //codeID = int.Parse(codeIDs.Last()) +1;
             CodeTools.GetValidCodeID(house);
             ExcelFilePath = excelPath;
             UpdateValues(profile);
@@ -457,58 +447,9 @@ namespace HotPort
             return house;
         }
         //Method to get the value of a single cell from worksheet
-        public string GetCellValue(string sheetName, string refCell)
+        public static string GetCellValue(string sheetName, string refCell)
         {
-            string? value = null;
-
-            using (FileStream fs = new FileStream(ExcelFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (SpreadsheetDocument spreadsheet = SpreadsheetDocument.Open(fs, false))
-                {
-                    WorkbookPart? wbPart = spreadsheet.WorkbookPart;
-                    Sheet? theSheet = wbPart?.Workbook.Descendants<Sheet>().
-                        Where(s => s.Name == sheetName).FirstOrDefault();
-                    if (theSheet == null)
-                    {
-                        throw new ArgumentException("sheetName");
-                    }
-                    WorksheetPart wsPart = (WorksheetPart)wbPart!.GetPartById(theSheet.Id!);
-
-                    Cell? theCell = wsPart.Worksheet?.Descendants<Cell>()?.
-                        Where(c => c.CellReference == refCell).FirstOrDefault();
-                    if (theCell is null || theCell.InnerText.Length < 0)
-                    {
-                        return string.Empty;
-                    }
-                    value = theCell?.CellValue?.InnerText;
-
-                    if (theCell?.DataType != null)
-                    {
-                        if (theCell.DataType.Value == CellValues.SharedString)
-                        {
-                            var stringTable = wbPart.GetPartsOfType<SharedStringTablePart>().FirstOrDefault();
-                            if (stringTable is not null)
-                            {
-                                value = stringTable.SharedStringTable.ElementAt(int.Parse(value)).InnerText;
-                            }
-                        }
-                        else if (theCell.DataType.Value == CellValues.Boolean)
-                        {
-                            switch (value)
-                            {
-                                case "0":
-                                    value = "FALSE";
-                                    break;
-                                default:
-                                    value = "TRUE";
-                                    break;
-                            }
-                        }
-                    }
-
-                }
-            }
-            return value;
+            return ExcelHelper.GetCellValue(ExcelFilePath, sheetName, refCell);
         }
     }
 }
