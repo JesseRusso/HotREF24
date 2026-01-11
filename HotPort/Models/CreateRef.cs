@@ -273,7 +273,7 @@ namespace HotPort
                             new XElement("English", map[$"{defaultUsageBin}E"].Value),
                             new XElement("French", map[$"{defaultUsageBin}F"].Value)));
                 }
-                //instantaneous - condensting heaters
+                //instantaneous - condensing heaters
                 if (tank.Element("TankType").Attribute("code").Value.Equals("12"))
                 {
                     tank.SetAttributeValue("flueDiameter", "0");

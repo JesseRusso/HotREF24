@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using HotPort.Models;
+using DocumentFormat.OpenXml.Office.Y2022.FeaturePropertyBag;
 
 namespace HotPort
 {
@@ -136,17 +137,12 @@ namespace HotPort
                                          where el.Element("Label").Value.Contains("2nd")
                                          select el).First();
 
-            if (GetCellValue("Calc", "D4") == null || GetCellValue("Calc", "D4") == "0")
+            string secondCheck = GetCellValue("Calc", "D4");
+
+            if (secondCheck == null || secondCheck == "0" || secondCheck == string.Empty)
             {
                 second.Remove();
                 first.Descendants("FloorHeader").Remove();
-                //change house to 1 storey in specifications if 2nd flr is not present
-                foreach (XElement el in newHouse.Descendants("Specifications").Descendants("Storeys"))
-                {
-                    el.SetAttributeValue("code", "1");
-                    el.Element("English").SetValue("One storey");
-                    el.Element("French").SetValue("Un étage");
-                }
             }
             else
             {
@@ -164,8 +160,44 @@ namespace HotPort
             GarageWall();
             TallWall();
             PlumbingWall();
+            SetHouseType();
+            SetStoreys();
         }
+        /*
+         * Checks the spreadsheet to determine the correct number of storeys 
+         */
+        public static void SetStoreys()
+        {
+            bool firstFloorHt = double.TryParse(GetCellValue("Calc", "E3"), out double firstHt) && firstHt > 0;
+            bool firstPerim = double.TryParse(GetCellValue("Calc", "C3"), out double firstFlrP) && firstFlrP > 0;
 
+            bool secondFloorHt = double.TryParse(GetCellValue("Calc", "E4"), out double second) && second > 0;
+            bool secondPerim = double.TryParse(GetCellValue("Calc", "C4"), out double secondFlrP) && secondFlrP > 0;
+
+            bool thirdFloorHt = double.TryParse(GetCellValue("Calc", "E5"), out double third) && third > 0;
+            bool thirdPerim = double.TryParse(GetCellValue("Calc", "C5"), out double thirdFlrP) && thirdFlrP > 0;
+
+            XElement spec = newHouse.Root.Element("House").Element("Specifications");
+
+            if(firstFloorHt && firstPerim)
+            {
+                if(secondFloorHt && secondPerim)
+                {
+                    if(thirdFloorHt && thirdPerim)
+                    {
+                        spec.Element("Storeys").SetAttributeValue("code", "5");
+                    }
+                    else
+                    {
+                        spec.Element("Storeys").SetAttributeValue("code", "3");
+                    }
+                }
+                else
+                {
+                    spec.Element("Storeys").SetAttributeValue("code", "1");
+                }
+            }
+        }
         //Finds garage wall in template and modifies its properties if it is present in the spreadsheet. Removes it from the file if it is absent.
         private void GarageWall()
         {
@@ -173,7 +205,8 @@ namespace HotPort
                                          where el.Element("Label").Value.ToLower().Contains("garage")
                                          select el)?.First();
 
-            if (GetCellValue("Calc", "K3") == null)
+            string garageCheck = GetCellValue("Calc", "K3");
+            if (garageCheck == null || garageCheck == string.Empty)
             {
                 garage.Remove();
             }
@@ -588,16 +621,21 @@ namespace HotPort
                     ps.Element("French")?.SetValue("Autre, 11 coins ou plus");
                 }
             }
+            SetDate();
+        }
+        /*
+         * Sets the house type in the specifications screen based on the selection made in the worksheet
+         */
+        public static void SetHouseType()
+        {
             foreach (XElement houseType in newHouse.Descendants("HouseType"))
             {
-                string partyFirstFlr = GetCellValue("Calc", "H3");
                 string? calcK5 = GetCellValue("Calc", "K5")?.ToLower();
-                if (double.TryParse(partyFirstFlr, out double value) && value > 0)
+                //if (double.TryParse(partyFirstFlr, out double value) && value > 0)
+                if (calcK5 != "single")
                 {
-                    switch (calcK5) 
+                    switch (calcK5)
                     {
-                        case "single":
-                            break;
                         case "semi":
                             houseType.SetAttributeValue("code", "2");
                             break;
@@ -607,8 +645,13 @@ namespace HotPort
                         case "rowhouse-mid":
                             houseType.SetAttributeValue("code", "8");
                             break;
-                        case "y":
-                            houseType.SetAttributeValue("code", "2");
+                        case "murb duplex detached":
+                            houseType.SetAttributeValue("code", "9");
+                            AddMurbData();
+                            break;
+                        case "murb duplex attached":
+                            houseType.SetAttributeValue("code", "11");
+                            AddMurbData();
                             break;
                         default:
                             houseType.SetAttributeValue("code", "1");
@@ -616,8 +659,34 @@ namespace HotPort
                     }
                 }
             }
-            SetDate();
         }
+        /*
+         * Changes the specifications screen to a MURB and adds required MURB elements
+         */
+        private static void AddMurbData()
+        {
+            XElement? house = newHouse.Root.Element("House");
+            XElement? specifications = house?.Element("Specifications");
+            XElement? htdFlrArea = specifications.Element("HeatedFloorArea");
+            XElement? infilFactors = house.Element("NaturalAirInfiltration").Element("OtherFactors");
+
+            house.Element("Labels").SetElementValue("English", "Multi-unit: one unit");
+            specifications.SetAttributeValue("buildingType", "Multi-unit: one unit");
+
+            XElement numberOf = new("NumberOf",
+                new XAttribute("storeysInBuilding", "2"),
+                new XAttribute("dwellingUnits", "2"),
+                new XAttribute("nonResUnits", "0"));
+
+            specifications.Element("HeatedFloorArea").AddBeforeSelf(numberOf);
+            //house.Element("BaseLoads").Element("Occupancy").Element("Children").SetAttributeValue("occupants", "0");
+            infilFactors.Element("LeakageFractions").SetAttributeValue("ceilings", "0.3");
+            infilFactors.Element("LeakageFractions").SetAttributeValue("walls", "0.5");
+            infilFactors.Element("LeakageFractions").SetAttributeValue("floors", "0.2");
+        }
+        /*
+         * Sets the evaluation date to the current date
+         */
         public static void SetDate()
         {
             XElement evalDate = newHouse.Element("HouseFile").Element("ProgramInformation").Element("File");
@@ -853,11 +922,12 @@ namespace HotPort
             }
         }
         /**
-         * Extracts window information and adds windows and codes to house file
+         * Extracts window information from the spreadsheet into a list, then adds the windows and their codes to the house file
          */
         public void ExtractWindows()
         {
             List<Window> windows = new List<Window>();
+
             for(int i = 2; i <= maxWindowRow; i++)
             {
                 string? name = GetCellValue("Windows", "A" + i);
@@ -867,10 +937,13 @@ namespace HotPort
                     int height = int.Parse(GetCellValue("Windows", "C" + i));
                     double uValue = double.Parse(GetCellValue("Windows", "D" + i).ToString());
                     double shgc = double.Parse(GetCellValue("Windows", "E" + i));
-                    int floor = int.Parse(GetCellValue("Windows", "G" + i));
+                    int floor = int.Parse(GetCellValue("Windows", "H" + i));
+                    string operation = GetCellValue("Windows", "G" + i);
+                    string direction = GetCellValue("Windows", "I" + i);
                     double overhang = double.Parse(GetCellValue("Calc", "M52"));
 
-                    Window window = new (name, width, height, uValue, shgc, floor, overhang, maxID);
+                    name = $"{name}-{operation}";
+                    Window window = new (name, width, height, uValue, shgc, floor, direction, overhang, maxID);
                     windows.Add(window);
                     window.codeId = CodeTools.FindWindowCode(newHouse, window);
                     window.AddWindow(newHouse);
