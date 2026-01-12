@@ -302,7 +302,15 @@ namespace HotPort
 
         public XDocument Doors(XDocument house)
         {
-            double width = Math.Round((Convert.ToDouble(GetCellValue("General", "N10")) * 0.0254), 4);
+            string N10 = GetCellValue("General", "N10")
+                ?? throw new InvalidOperationException("Missing required cell value: General!N10.");
+
+            if(!double.TryParse(N10, out double width))
+            {
+                throw new FormatException($"General!N9 must be numeric, but was '{N10}'.");
+            }
+
+            width = Math.Round(width * 0.0254, 4);
             string ff = "1st Flr";
             foreach (XElement wall in house.Descendants("Wall"))
             {
@@ -340,7 +348,14 @@ namespace HotPort
 
         public XDocument Windows(XDocument house)
         {
-            double size = Math.Round((System.Convert.ToDouble(GetCellValue("General", "N9")) * 25.4), 6);
+            string N9 = GetCellValue("General", "N9")
+                ?? throw new InvalidOperationException("Missing required cell value: General!N9");
+            if(!double.TryParse(N9, out double size))
+            {
+                throw new FormatException($"General!N10 must be numeric, but was '{N9}'.");
+            }
+
+            size = Math.Round(size * 25.4, 6);
             string floors = "2nd Flr";
             List<string> wallList = new List<string>();
             Dictionary<string, string> facingDirection = new()

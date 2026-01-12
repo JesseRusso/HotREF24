@@ -27,8 +27,6 @@ namespace HotPort
         public static int ceilingCount = 1;
         private static bool basementPresent = true;
         private static int maxWindowRow = 62;
-
-
         public CreateProp(string excelFilePath, XDocument template)
         {
             filePath = excelFilePath;
