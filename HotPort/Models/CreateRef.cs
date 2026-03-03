@@ -1,11 +1,12 @@
 ﻿//Created by Jesse Russo 2019
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using HotPort.Models;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Xml.Linq;
 
 namespace HotPort
 {
@@ -28,21 +29,10 @@ namespace HotPort
         private string defaultUsageBin = "4";
         private int maxID;
         private int codeID = 3;
-        private string ExcelFilePath {get; set;}
+        private static string ExcelFilePath {get; set;}
 
         public CreateRef(XDocument house, string excelPath, XElement profile)
         {
-            //List<string> codeIDs = new List<string>();
-            //var hasCode = from el in house.Descendants("Codes").Descendants().Attributes("id")
-            //              select el.Value;
-
-            //foreach(string code in hasCode)
-            //{
-            //    string[] codeStrings = code.Split(' ');
-            //    codeIDs.Add(codeStrings[1]);
-            //}
-            //codeIDs.Sort();
-            //codeID = int.Parse(codeIDs.Last()) +1;
             CodeTools.GetValidCodeID(house);
             ExcelFilePath = excelPath;
             UpdateValues(profile);
@@ -283,7 +273,7 @@ namespace HotPort
                             new XElement("English", map[$"{defaultUsageBin}E"].Value),
                             new XElement("French", map[$"{defaultUsageBin}F"].Value)));
                 }
-                //instantaneous - condensting heaters
+                //instantaneous - condensing heaters
                 if (tank.Element("TankType").Attribute("code").Value.Equals("12"))
                 {
                     tank.SetAttributeValue("flueDiameter", "0");
@@ -312,7 +302,15 @@ namespace HotPort
 
         public XDocument Doors(XDocument house)
         {
-            double width = Math.Round((Convert.ToDouble(GetCellValue("General", "N10")) * 0.0254), 4);
+            string N10 = GetCellValue("General", "N10")
+                ?? throw new InvalidOperationException("Missing required cell value: General!N10.");
+
+            if(!double.TryParse(N10, out double width))
+            {
+                throw new FormatException($"General!N9 must be numeric, but was '{N10}'.");
+            }
+
+            width = Math.Round(width * 0.0254, 4);
             string ff = "1st Flr";
             foreach (XElement wall in house.Descendants("Wall"))
             {
@@ -350,7 +348,14 @@ namespace HotPort
 
         public XDocument Windows(XDocument house)
         {
-            double size = Math.Round((System.Convert.ToDouble(GetCellValue("General", "N9")) * 25.4), 6);
+            string N9 = GetCellValue("General", "N9")
+                ?? throw new InvalidOperationException("Missing required cell value: General!N9");
+            if(!double.TryParse(N9, out double size))
+            {
+                throw new FormatException($"General!N10 must be numeric, but was '{N9}'.");
+            }
+
+            size = Math.Round(size * 25.4, 6);
             string floors = "2nd Flr";
             List<string> wallList = new List<string>();
             Dictionary<string, string> facingDirection = new()
@@ -457,58 +462,9 @@ namespace HotPort
             return house;
         }
         //Method to get the value of a single cell from worksheet
-        public string GetCellValue(string sheetName, string refCell)
+        public static string GetCellValue(string sheetName, string refCell)
         {
-            string? value = null;
-
-            using (FileStream fs = new FileStream(ExcelFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (SpreadsheetDocument spreadsheet = SpreadsheetDocument.Open(fs, false))
-                {
-                    WorkbookPart? wbPart = spreadsheet.WorkbookPart;
-                    Sheet? theSheet = wbPart?.Workbook.Descendants<Sheet>().
-                        Where(s => s.Name == sheetName).FirstOrDefault();
-                    if (theSheet == null)
-                    {
-                        throw new ArgumentException("sheetName");
-                    }
-                    WorksheetPart wsPart = (WorksheetPart)wbPart!.GetPartById(theSheet.Id!);
-
-                    Cell? theCell = wsPart.Worksheet?.Descendants<Cell>()?.
-                        Where(c => c.CellReference == refCell).FirstOrDefault();
-                    if (theCell is null || theCell.InnerText.Length < 0)
-                    {
-                        return string.Empty;
-                    }
-                    value = theCell?.CellValue?.InnerText;
-
-                    if (theCell?.DataType != null)
-                    {
-                        if (theCell.DataType.Value == CellValues.SharedString)
-                        {
-                            var stringTable = wbPart.GetPartsOfType<SharedStringTablePart>().FirstOrDefault();
-                            if (stringTable is not null)
-                            {
-                                value = stringTable.SharedStringTable.ElementAt(int.Parse(value)).InnerText;
-                            }
-                        }
-                        else if (theCell.DataType.Value == CellValues.Boolean)
-                        {
-                            switch (value)
-                            {
-                                case "0":
-                                    value = "FALSE";
-                                    break;
-                                default:
-                                    value = "TRUE";
-                                    break;
-                            }
-                        }
-                    }
-
-                }
-            }
-            return value;
+            return ExcelHelper.GetCellValue(ExcelFilePath, sheetName, refCell);
         }
     }
 }

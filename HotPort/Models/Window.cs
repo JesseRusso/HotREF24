@@ -17,6 +17,7 @@ namespace HotPort
         private int _floor;
         private int _uValue;
         private double _overhang;
+        private string _direction;
         public string Name { get { return _name; } }
         public double Width { get { return _width; } }
         public double Height { get { return _height; } }
@@ -25,9 +26,10 @@ namespace HotPort
         public int Id { get { return _id;} }
         public int codeId { get { return _codeId;} set { _codeId = value; } }
         public int floor { get { return _floor; } }
+        public string direction { get { return _direction; } }
 
         //TODO initialize all values to the appropriate metric values
-        public Window(string name, int width, int height, double uValue, double shgc, int floor, double overhang, int id)
+        public Window(string name, int width, int height, double uValue, double shgc, int floor, string direction, double overhang, int id)
         {
             _name = name;
             _width = Math.Round(width * 25.4, 6);
@@ -38,9 +40,21 @@ namespace HotPort
             _rsi = Math.Round((1 / uValue), 4);
             _overhang = Math.Round((overhang * 0.0254) * 12, 4);
             _uValue = (int)(uValue * 100);
+            _direction = direction.ToLower();
         }
+        /*
+         * Returns the block of XML representing this window
+         */
         public XElement getWindowBlock()
         {
+            Dictionary<string, string> facingDirection = new()
+            {
+                { "n", "5" },
+                { "s", "1" },
+                { "w", "7" },
+                { "e", "3" },
+            };
+
             XElement windowBlock = new XElement("Window",
                 new XAttribute("number", "1"),
                 new XAttribute("er", "-32.1684"),
@@ -57,7 +71,7 @@ namespace HotPort
                     new XAttribute("height", _height),
                     new XAttribute("width", _width),
                     new XAttribute("headerHeight", "0"),
-                    new XAttribute("overhangWidth", _overhang),
+                    new XAttribute("overhangWidth", _floor > 1 ? _overhang : "0"),
                         new XElement("Tilt",
                         new XAttribute("code", "1"),
                         new XAttribute("value", "90"),
@@ -67,15 +81,18 @@ namespace HotPort
                     new XAttribute("curtain", "1"),
                     new XAttribute("shutterRValue", "0")),
                     new XElement("FacingDirection",
-                    new XAttribute("code", "1"),
+                    new XAttribute("code", facingDirection.TryGetValue(_direction, out string value) ? value : "1"),
                     new XElement("English", "North"),
                     new XElement("French", "Nord")));
 
             return windowBlock;
         }
+        /*
+         * Adds the window to the house file. 
+         */
         public void AddWindow(XDocument house)
         {
-            XElement[] walls = new XElement[4];
+            XElement[] walls = new XElement[10];
 
             XElement? bsmt = house?.Root?.Element("House")?.Element("Components")?.Element("Basement");
             XElement? first = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
@@ -87,16 +104,21 @@ namespace HotPort
             XElement? third = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
                                where el.Element("Label")?.Value.Contains("3") ?? false
                                select el)?.FirstOrDefault();
+            XElement? tallWall = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
+                               where el.Element("Label")?.Value.ToLower().Contains("tall") ?? false
+                               select el)?.FirstOrDefault();
 
-            if(bsmt != null) walls[0] = bsmt;
+            if (bsmt != null) walls[0] = bsmt;
             if(first != null) walls[1] = first;
             if(second != null) walls[2] = second;
             if(third != null) walls[3] = third;
+            if(tallWall != null) walls[9] = tallWall;
+
             walls[_floor].Element("Components").AddFirst(getWindowBlock());
         }
         public override string ToString()
         {
-            return $"u{_uValue}shg{Math.Round(Shgc * 100,2)}";
+            return $"u{_uValue}shg{Math.Round(Shgc * 100, 2)}";
         }
 
     }

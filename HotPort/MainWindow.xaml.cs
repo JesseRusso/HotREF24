@@ -107,8 +107,26 @@ namespace HotPort
                 propHouse = cr.HeatingCooling(propHouse);
                 propHouse = cr.ChangeACH(propHouse);
                 propHouse = cr.AddFan(propHouse);
-                propHouse = cr.Doors(propHouse);
-                propHouse = cr.Windows(propHouse);
+                try
+                {
+                    propHouse = cr.Doors(propHouse);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, 
+                        "Error getting door width",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                try
+                {
+                    propHouse = cr.Windows(propHouse);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, 
+                        "Error getting window size",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
                 propHouse = cr.HotWater(propHouse);
                 Cursor = Cursors.Arrow;
 
@@ -207,7 +225,7 @@ namespace HotPort
                 return;
             }
             try { cp.ExtraFloors(); }
-            catch
+             catch
             {
                 Cursor = Cursors.Arrow;
                 MessageBox.Show("Unexpected value while adding floors. Have a typo in the EXPOSED FLOORS section?",
