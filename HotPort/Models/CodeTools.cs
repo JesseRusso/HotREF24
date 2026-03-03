@@ -46,7 +46,7 @@ namespace HotPort
                     new XElement("Layers",
                         new XElement("WindowLegacy",
                         new XAttribute("frameHeight", "0"),
-                        new XAttribute("shgc", window.Shgc),
+                        new XAttribute("shgc", Math.Round(window.Shgc, 2)),
                         new XAttribute("rank", "1"),
                         new XElement("Type",
                             new XAttribute("code", "1"),

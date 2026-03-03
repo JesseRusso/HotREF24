@@ -118,7 +118,7 @@ namespace HotPort
         }
         public override string ToString()
         {
-            return $"u{_uValue}shg{Shgc * 100}";
+            return $"u{_uValue}shg{Math.Round(Shgc * 100, 2)}";
         }
 
     }
