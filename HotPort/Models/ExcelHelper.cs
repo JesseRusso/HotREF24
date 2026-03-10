@@ -46,7 +46,30 @@ namespace HotPort.Models
             }
             return value ?? string.Empty;
         }
+        /*
+         * Method for getting values that are required to be of type double
+         */
+        public static double GetDoubleCellValue(string filepath, string sheetName, string  cellReference)
+        {
+            // Get the cell value as string
+            string cellValue = GetCellValue(filepath, sheetName, cellReference);
 
+            // Check if the cell is empty
+            if (string.IsNullOrEmpty(cellValue))
+            {
+                throw new InvalidOperationException($"Cell '{cellReference}' in sheet '{sheetName}' is empty or does not exist.");
+            }
+
+            // Attempt to parse the string value to double
+            if (double.TryParse(cellValue, out double result))
+            {
+                return result;
+            }
+
+            // If parsing fails, throw exception
+            throw new FormatException($"Cannot convert cell value '{cellValue}' from cell '{cellReference}' in sheet '{sheetName}' to double. The value is not a valid number.");
+
+        }
         private static SpreadsheetDocument GetDocument(string filePath)
         {
             if (!cache.TryGetValue(filePath, out var entry))

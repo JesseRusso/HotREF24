@@ -162,11 +162,21 @@ namespace HotPort
                 return;
             }
             Cursor = Cursors.Wait;
+
             XDocument template = new XDocument(XDocument.Load(templatePath));
             CreateProp cp = new CreateProp(excelFilePath, template);
-            //CreateProp.FindID(template);
             CreateProp.ChangeAddress(proposedAddress);
 
+            try { cp.CityCheck(); }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            try { cp.ChangeCityWeather(); }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
             try { cp.ChangeEquipment(); }
             catch
             {

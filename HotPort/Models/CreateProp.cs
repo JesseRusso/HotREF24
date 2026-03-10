@@ -1,14 +1,15 @@
 ﻿//Created by Jesse Russo 2021
+using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Office.Y2022.FeaturePropertyBag;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using System.Text.RegularExpressions;
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
 using HotPort.Models;
-using DocumentFormat.OpenXml.Office.Y2022.FeaturePropertyBag;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace HotPort
 {
@@ -24,6 +25,7 @@ namespace HotPort
         public static string vaultRValue;
         public static string cathedralRValue;
         public static string flatCeilingRValue;
+        public static string tallWallRValue;
         public static int ceilingCount = 1;
         private static bool basementPresent = true;
         private static int maxWindowRow = 62;
@@ -32,7 +34,6 @@ namespace HotPort
             filePath = excelFilePath;
             newHouse = new XDocument(template);
             GetBuilder();
-            CityCheck();
             FindID(template);
         }
         public static XDocument GetHouse()
@@ -71,43 +72,42 @@ namespace HotPort
         //Checks special city cells P1:P5 in spreadsheet and sets
         //city-specific settings like weather station location,
         //NAI terrain info, and city name in specifications
-        private void CityCheck()
+        public void CityCheck()
         {
-            string city;
-            if (GetCellValue("Calc", "P1")?.ToLower() == "y")
-            {
-                city = "Okotoks";
-            }
-            else if (GetCellValue("Calc", "P2")?.ToLower() == "y")
-            {
-                city = "Edmonton";
-            }
-            else if (GetCellValue("Calc", "P3")?.ToLower() == "y")
-            {
-                city = "Airdrie";
-            }
-            else if (GetCellValue("Calc", "P4")?.ToLower() == "y")
-            {
-                city = "Victoria";
-            }
-            else if (GetCellValue("Calc", "P5")?.ToLower() == "y")
-            {
-                city = "Cochrane";
-            }
-            else { city = "Calgary"; }
+            string city = GetCellValue("Calc", "P1");
 
-            ChangeCityWeather(city);
-        }
-        private void ChangeCityWeather(string city)
-        {
-            newHouse.Element("HouseFile").Element("ProgramInformation").Element("Client").Element("StreetAddress").Element("City").SetValue(city);
-            switch (city)
+            if (city == null || city == string.Empty)
             {
-                case "Cochrane":
+                throw new FormatException("!Calc P1 cannot be empty. Please select a city.");
+            }
+            if(city == "Okotoks")
+            {
+                newHouse.Element("HouseFile").Element("House").Element("NaturalAirInfiltration").Element("Specifications").Element("BuildingSite").Element("Terrain").SetAttributeValue("code", 3);
+            }
+            newHouse.Element("HouseFile").Element("ProgramInformation").Element("Client").Element("StreetAddress").Element("City").SetValue(city);
+        }
+        public void ChangeCityWeather()
+        {
+            string weatherStation = GetCellValue("Calc", "P6");
+
+            if(weatherStation ==  null || weatherStation == string.Empty)
+            {
+                throw new ArgumentException("Invalid data found in the Weather zone field; !Calc P6");
+            }
+            
+            switch (weatherStation.ToLower())
+            {
+                case "cop upper":
                     newHouse.Element("HouseFile").Element("ProgramInformation").Element("Weather").Element("Location").SetAttributeValue("code", 10);
                     break;
-                case "Okotoks":
-                    newHouse.Element("HouseFile").Element("House").Element("NaturalAirInfiltration").Element("Specifications").Element("BuildingSite").Element("Terrain").SetAttributeValue("code", 3);
+                case "stavely":
+                    newHouse.Element("HouseFile").Element("ProgramInformation").Element("Weather").Element("Location").SetAttributeValue("code", 37);
+                    break;
+                case "sundre":
+                    newHouse.Element("HouseFile").Element("ProgramInformation").Element("Weather").Element("Location").SetAttributeValue("code", 38);
+                    break;
+                default:
+                    newHouse.Element("HouseFile").Element("ProgramInformation").Element("Weather").Element("Location").SetAttributeValue("code", 5);
                     break;
             }
         }
@@ -156,7 +156,7 @@ namespace HotPort
                 }
             }
             GarageWall();
-            TallWall();
+            TallWalls();
             PlumbingWall();
             SetHouseType();
             SetStoreys();
@@ -220,22 +220,47 @@ namespace HotPort
         }
 
         //Finds tall wall in template and modifies its properties if it is present in the spreadsheet. Removes it from the file if it is absent.
-        private void TallWall()
+        private void TallWalls()
         {
-            XElement tall = newHouse.Descendants("Wall").Where(x => x.Element("Label").Value.ToLower().Contains("tall")).First();
-            double perim = Convert.ToDouble(GetCellValue("Calc", "H31"));
+            if (!int.TryParse(GetCellValue("Calc", "K4"), out int count))
+            {
+                throw new IOException("Invalid data type found in !Calc K4. Must be a whole number 1-2.");
+            }
 
-            if (GetCellValue("Calc", "K4") == null || perim <= 0)
+            XElement tall = newHouse.Descendants("Wall").Where(x => x.Element("Label").Value.ToLower().Contains("tall")).First();
+            tallWallRValue = tall.Element("Construction").Element("Type").Attribute("rValue").Value.ToString();
+
+            if (count <= 0)
             {
                 tall.Remove();
+                return;
             }
-            else
+            else if (count == 2)
             {
-                tall.Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G31")) * 0.3048, 3));
-                tall.Element("Measurements").SetAttributeValue("perimeter", Math.Round(perim * 0.3048, 3));
-                tall.Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "E31"));
-                tall.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F31"));
+                string twName = GetCellValue("Calc", "A27");
+                string twCorners = GetCellValue("Calc", "E27");
+                string twInts = GetCellValue("Calc", "F27");
+                string twHeight = GetCellValue("Calc", "G27");
+                string twPerim = GetCellValue("Calc", "H27");
+
+                if(double.TryParse(twHeight, out double twh) && double.TryParse(twPerim, out double twp))
+                {
+                    AddNewWall(twName, twCorners, twInts, twHeight, twPerim, tallWallRValue);
+                }
+                else
+                {
+                    throw new IOException("Error parsing Tall Wall 2 height or perimeter");
+                }
             }
+            if (!Double.TryParse(GetCellValue("Calc", "H31"), out double perim) || !Double.TryParse(GetCellValue("Calc", "G31"), out double ht))
+            {
+                throw new IOException("Error parsing Tall Wall perimeter or height");
+            }
+            tall.Element("Measurements").SetAttributeValue("height", Math.Round(ht * 0.3048, 3));
+            tall.Element("Measurements").SetAttributeValue("perimeter", Math.Round(perim * 0.3048, 3));
+            tall.Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "E31"));
+            tall.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F31"));
+
         }
         //Finds plumbing wall when label contains "plumbing" and modifies its properties if its present in spreadsheet. Removes it from the file if absent.
         private void PlumbingWall()
@@ -282,10 +307,11 @@ namespace HotPort
                 over4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "K38")) * 0.3048, 4));
                 over4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "L38")) * 0.3048, 4));
 
-                if (Convert.ToDouble(GetCellValue("Calc", "I38")) > 1D || bsmtUnder4Feet)
+                string pony = GetCellValue("Calc", "I38");
+                if (double.TryParse(pony, out double height) && height > 0D)
                 {
                     over4.Element("Wall").SetAttributeValue("hasPonyWall", "true");
-                    over4.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", Math.Round(Convert.ToDouble(GetCellValue("Calc", "I38")) * 0.3048, 4));
+                    over4.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", Math.Round(height * 0.3048, 4));
                     over4.Element("Wall").Element("Construction").Add(
                         new XElement("PonyWallType",
                             new XAttribute("nominalInsulation", "3.2536"),
@@ -328,8 +354,23 @@ namespace HotPort
                 under4.Element("Wall").Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "J39"));
                 under4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "K39")) * 0.3048, 4));
                 under4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "L39")) * 0.3048, 4));
-                under4.Element("Wall").SetAttributeValue("hasPonyWall", "true");
-                under4.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", Math.Round(Convert.ToDouble(GetCellValue("Calc", "I39")) * 0.3048, 4));
+
+                string pony = GetCellValue("Calc", "I39");
+                if(double.TryParse(pony, out double height) && height > 0D)
+                {
+                    under4.Element("Wall").SetAttributeValue("hasPonyWall", "true");
+                    under4.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", Math.Round(height * 0.3048, 4));
+                    under4.Element("Wall").Element("Construction").Add(
+                        new XElement("PonyWallType",
+                            new XAttribute("nominalInsulation", "3.2536"),
+                            new XElement("Description", "User specified"),
+                            new XElement("Composite",
+                                new XElement("Section",
+                                    new XAttribute("rank", "1"),
+                                    new XAttribute("percentage", "100"),
+                                    new XAttribute("rsi", "2.6029"),
+                                    new XAttribute("nominalRsi", "3.2536")))));
+                }
             }
             else
             {
@@ -354,7 +395,7 @@ namespace HotPort
             }
         }
 
-        // Gathers R values from existing ceiling elements in the H2K template
+        // Gathers R-values from existing ceiling elements in the H2K template
         public void CheckCeilings()
         {
             XElement ceil = (XElement)(from el in newHouse.Descendants("Ceiling")
@@ -545,6 +586,12 @@ namespace HotPort
             foreach (XElement add in newHouse.Descendants("Client").Descendants("StreetAddress"))
             {
                 add.Element("Street")?.SetValue(CamelCaseToSpaceSeparated(address));
+
+                string postCode = GetCellValue("Calc", "P2");
+                if (postCode != null && postCode != string.Empty)
+                {
+                    add.SetElementValue("PostalCode", postCode);
+                }
             }
         }
 
@@ -753,7 +800,7 @@ namespace HotPort
         {
             string column = "E";
             int startRow = 10;
-            int endRow = 17;
+            int endRow = 16;
             int currentRow = startRow;
             string type;
             string length;
@@ -825,7 +872,7 @@ namespace HotPort
         }
 
         //Creates new walls that are required but not included in the template. Uses R value from the first floor
-        private void NewWall(string name, string corners, string intersections, string height, string perim)
+        private void AddNewWall(string name, string corners, string intersections, string height, string perim, string rValue)
         {
             string heightMetric = Math.Round(Convert.ToDouble(height) * 0.3048, 4).ToString();
             string perimMetric = Math.Round(Convert.ToDouble(perim) * 0.3048, 4).ToString();
@@ -841,7 +888,7 @@ namespace HotPort
                         new XAttribute("corners", corners),
                         new XAttribute("intersections", intersections),
                             new XElement("Type", "User specified",
-                            new XAttribute("rValue", wallRValue),
+                            new XAttribute("rValue", rValue),
                             new XAttribute("nominalInsulation", "3.3527"))),
                     new XElement("Measurements",
                         new XAttribute("height", heightMetric),
@@ -903,11 +950,10 @@ namespace HotPort
                     corners = GetCellValue("Calc", "E" + currentRow);
                     intersections = GetCellValue("Calc", "F" + currentRow);
 
-                    NewWall(name, corners, intersections, height, perim);
-
+                    AddNewWall(name, corners, intersections, height, perim, wallRValue);
                 }
                 currentRow++;
-                if (currentRow == 24)
+                if (currentRow == 24 || currentRow == 27)
                 {
                     currentRow++;
                     i++;
