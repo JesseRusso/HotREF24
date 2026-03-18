@@ -294,8 +294,8 @@ namespace HotPort
         {
             foreach (XElement vent in house.Descendants("WholeHouseVentilatorList"))
             {
-                double flowrate = Convert.ToDouble(GetCellValue("General", "H4"));
-                vent.Add(HRV.CreateFan(flowrate, GetCellValue("General", "K4")));
+                double flowrate = Math.Round(GetDoubleCellValue("General", "H4"), 1);
+                vent.Add(HRV.CreateFan(flowrate, GetDoubleCellValue("General", "K4").ToString()));
             }
             return house;
         }
@@ -465,6 +465,10 @@ namespace HotPort
         public static string GetCellValue(string sheetName, string refCell)
         {
             return ExcelHelper.GetCellValue(ExcelFilePath, sheetName, refCell);
+        }
+        private static double GetDoubleCellValue(string sheetName, string refCell)
+        {
+            return ExcelHelper.GetDoubleCellValue(ExcelFilePath, sheetName, refCell);
         }
     }
 }

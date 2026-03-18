@@ -14,6 +14,10 @@ namespace HotPort.Models
         public static string GetCellValue(string filePath, string sheetName, string cellReference)
         {
             var doc = GetDocument(filePath);
+
+            //using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            //using var doc = SpreadsheetDocument.Open(stream, false);
+
             WorkbookPart? wbPart = doc.WorkbookPart;
             Sheet? theSheet = wbPart?.Workbook.Descendants<Sheet>()
                 .FirstOrDefault(s => s.Name == sheetName);
@@ -68,13 +72,12 @@ namespace HotPort.Models
 
             // If parsing fails, throw exception
             throw new FormatException($"Cannot convert cell value '{cellValue}' from cell '{cellReference}' in sheet '{sheetName}' to double. The value is not a valid number.");
-
         }
         private static SpreadsheetDocument GetDocument(string filePath)
         {
             if (!cache.TryGetValue(filePath, out var entry))
             {
-                var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
                 var document = SpreadsheetDocument.Open(stream, false);
                 entry = (stream, document);
                 cache[filePath] = entry;

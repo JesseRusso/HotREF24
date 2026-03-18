@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Windows;
 using System.Xml.Linq;
 
 namespace HotPort
@@ -449,14 +450,26 @@ namespace HotPort
         }
         private void ChangeHRV()
         {
+            double hrvFlowrate;
+            string fanPower;
             string hrvMake = GetCellValue("Summary", "D74");
             string hrvModel = GetCellValue("Summary", "E74");
             string hrvPower1 = GetCellValue("General", "I4");
             string hrvPower2 = GetCellValue("General", "J4");
             string hrvSRE1 = GetCellValue("General", "I5");
             string hrvSRE2 = GetCellValue("General", "J5");
-            double hrvFlowrate = Math.Round(Convert.ToDouble(GetCellValue("General", "H4")), 1);
-            string fanPower = Math.Round(Convert.ToDouble(GetCellValue("General", "K4")), 1).ToString();
+            
+            if(int.TryParse(GetCellValue("General", "K2"), out int count) && count > 0)
+            {
+                hrvModel += " & " + GetCellValue("Summary", "E92");
+            }
+
+            try
+            {
+                hrvFlowrate = Math.Round(GetDoubleCellValue("General", "H4"), 1);
+                fanPower = Math.Round(GetDoubleCellValue("General", "K4"), 1).ToString();
+            }
+            catch (FormatException) { throw; }
 
             if (Convert.ToDouble(GetCellValue("General", "I4")) <= 0)
             {
@@ -623,14 +636,16 @@ namespace HotPort
             }
 
             //This section gets the number of corners from each floor and finds the maximum value. Then sets the plan shape 
-            List<string> corners = new List<string>();
-            corners.Add(GetCellValue("Calc", "F2"));
-            corners.Add(GetCellValue("Calc", "F3"));
-            corners.Add(GetCellValue("Calc", "F4"));
-
-            corners.RemoveAll(Value => Value == null);
-            List<int> shape = new List<int>(corners.Select(s => int.Parse(s)).ToList());
-            int maxCorners = shape.Max();
+            List<int> corners = new();
+            for(int i = 2; i <= 5; i++)
+            {
+                string corner = GetCellValue("Calc", $"F{i}");
+                if(int.TryParse(corner, out int count))
+                {
+                    corners.Add(count);
+                }
+            }
+            int maxCorners = corners.Max();
             corners.Clear();
 
             foreach (XElement ps in newHouse.Descendants("PlanShape"))
@@ -676,7 +691,7 @@ namespace HotPort
             foreach (XElement houseType in newHouse.Descendants("HouseType"))
             {
                 string? calcK5 = GetCellValue("Calc", "K5")?.ToLower();
-                //if (double.TryParse(partyFirstFlr, out double value) && value > 0)
+
                 if (calcK5 != "single")
                 {
                     switch (calcK5)
@@ -758,12 +773,15 @@ namespace HotPort
 
             if (garPresent)
             {
-                garFlrArea = Convert.ToDouble(GetCellValue("Calc", "P21"));
-                garFlrLength = Convert.ToDouble(GetCellValue("Calc", "O21"));
-                garFlr.Element("Measurements")?.SetAttributeValue("area", Math.Round(garFlrArea * 0.092903, 4));
+                try
+                {
+                    garFlrLength = GetDoubleCellValue("Calc", "O21");
+                }
+                catch(FormatException ex) { throw; }
+
+                garFlr.Element("Measurements")?.SetAttributeValue("area", Math.Round(area * 0.092903, 4));
                 garFlr.Element("Measurements")?.SetAttributeValue("length", Math.Round(garFlrLength * 0.3048, 4));
                 garFlr.Element("Label")?.SetValue(GetCellValue("Calc", "L21"));
- 
             }
             else
             {
@@ -942,9 +960,9 @@ namespace HotPort
                 string currentCell = column + currentRow.ToString();
                 string cellValue = GetCellValue("Calc", currentCell);
 
-                if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
+                if (double.TryParse(cellValue, out double cellValueDouble) && cellValueDouble > 0)
                 {
-                    perim = GetCellValue("Calc", currentCell);
+                    perim = cellValue;
                     height = GetCellValue("Calc", "G" + currentRow);
                     name = GetCellValue("Calc", "A" + currentRow);
                     corners = GetCellValue("Calc", "E" + currentRow);
@@ -1012,6 +1030,10 @@ namespace HotPort
         public static string GetCellValue(string sheetName, string refCell)
         {
             return ExcelHelper.GetCellValue(filePath, sheetName, refCell);
+        }
+        private static double GetDoubleCellValue(string sheetName, string refCell)
+        {
+            return ExcelHelper.GetDoubleCellValue(filePath, sheetName, refCell);
         }
         //stolen regex to separate filename into an address
         static string CamelCaseToSpaceSeparated(string text)

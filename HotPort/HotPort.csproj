@@ -59,4 +59,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\" />
+    <Folder Include="VIews\" />
+  </ItemGroup>
+
 </Project>
