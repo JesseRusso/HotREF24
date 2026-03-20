@@ -162,20 +162,19 @@ namespace HotPort
         }
         public void AddCeiling()
         {
-            if (CreateProp.ceilingCount > 1 && ceilingName.Contains("2nd"))
-            {
-                slopeName = ceilingSlope + "/12";
-            }
             if (slopeCode.Equals("1"))
             {
                 slopeName = "Flat";
             }
-            if (vaultCheck)
+            else if (vaultCheck)
             {
                 slopeName = "";
+            
             }
+            else slopeName = ceilingSlope + "/12";
+
             XElement comp = (from el in CreateProp.newHouse.Descendants("Components")
-                                       select el).First();
+                                 select el).First();
             comp.Add(
                 new XElement("Ceiling",
                 new XAttribute("id", CreateProp.maxID),

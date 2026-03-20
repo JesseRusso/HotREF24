@@ -9,6 +9,7 @@ using System.Xml.Linq;
 using System.Linq;
 using Ookii.Dialogs.Wpf;
 using System.Reflection;
+using HotPort.Models;
 
 namespace HotPort
 {
@@ -162,11 +163,25 @@ namespace HotPort
                 return;
             }
             Cursor = Cursors.Wait;
+
             XDocument template = new XDocument(XDocument.Load(templatePath));
             CreateProp cp = new CreateProp(excelFilePath, template);
-            //CreateProp.FindID(template);
             CreateProp.ChangeAddress(proposedAddress);
 
+            try { cp.CityCheck(); }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                ExcelHelper.CloseCachedDocuments();
+                return;
+            }
+            try { cp.ChangeCityWeather(); }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                ExcelHelper.CloseCachedDocuments();
+                return;
+            }
             try { cp.ChangeEquipment(); }
             catch
             {
@@ -174,6 +189,7 @@ namespace HotPort
                 MessageBox.Show("There was an error. Check furnace and HRV values in excel.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.CheckAC(); }
@@ -183,6 +199,7 @@ namespace HotPort
                 MessageBox.Show("Unexpected value in A/C selection.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.ChangeSpecs(); }
@@ -192,6 +209,7 @@ namespace HotPort
                 MessageBox.Show("There was an error. Check for typos in intersections/corners and volume/highest ceiling.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.ChangeWalls(); }
@@ -202,6 +220,7 @@ namespace HotPort
                     "check that the H2K template has all required elements.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.CheckCeilings(); }
@@ -212,16 +231,16 @@ namespace HotPort
                     "Check that the H2K template has the required ceilings.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.ChangeFloors(); }
-            catch
+            catch (FormatException ex)
             {
                 Cursor = Cursors.Arrow;
-                MessageBox.Show("Error either retrieving floor R values from template, or adding garage " +
-                    "floor. Template should have 2 exposed floors with 'cant' and 'garage' in their names",
-                    "Something went wrong",
+                MessageBox.Show(ex.Message, "Oopsie",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.ExtraFloors(); }
@@ -231,6 +250,7 @@ namespace HotPort
                 MessageBox.Show("Unexpected value while adding floors. Have a typo in the EXPOSED FLOORS section?",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.ExtraCeilings(); }
@@ -240,6 +260,7 @@ namespace HotPort
                 MessageBox.Show("Unexpected value while adding ceilings. Have a typo in the FLAT CEILINGS section?",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.CheckVaults(); }
@@ -249,6 +270,7 @@ namespace HotPort
                 MessageBox.Show("Unexpected value while adding vaults. Have a typo in the VAULTS section?",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.ExtraWalls(); }
@@ -258,6 +280,7 @@ namespace HotPort
                 MessageBox.Show("Unexpected value while adding walls. Have a typo in the ABOVE GRADE WALLS section?",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.ChangeBasment(); }
@@ -268,6 +291,7 @@ namespace HotPort
                     "Check template has required basement elements then check spreadsheet for typos.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.GasDHW(); }
@@ -278,6 +302,7 @@ namespace HotPort
                     "Check for typos in GAS DHW section.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             try { cp.ElectricDHW(); }
@@ -288,6 +313,7 @@ namespace HotPort
                     "Check for typos in ELECTRIC DHW section.",
                     "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                ExcelHelper.CloseCachedDocuments();
                 return;
             }
             if (Properties.Settings.Default.WindowsCheckbox)
