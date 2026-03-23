@@ -8,5 +8,6 @@ namespace HotPort.Models
 {
     internal class Energuide
     {
+
     }
 }

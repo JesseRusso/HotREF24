@@ -321,7 +321,6 @@ namespace HotPort
                 cp.RemoveWindows();
                 cp.ExtractWindows();
             }
-
             newHouse = CreateProp.GetHouse();
             Cursor = Cursors.Arrow;
             SaveFileDialog sfd = new SaveFileDialog
