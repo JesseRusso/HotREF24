@@ -35,6 +35,7 @@ namespace HotPort
             this.Left = Settings.Default.WindowLeft;
             this.Top = Settings.Default.WindowTop;
             XDocument values = new XDocument(XDocument.Load(@".\ReferenceProfiles.xml"));
+
             profiles = (from el in values.Descendants("Zone")
                         select el).ToArray();
             foreach (XElement zone in profiles)
@@ -117,6 +118,7 @@ namespace HotPort
                     MessageBox.Show(ex.Message, 
                         "Error getting door width",
                         MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
                 try
                 {
@@ -127,11 +129,11 @@ namespace HotPort
                     MessageBox.Show(ex.Message, 
                         "Error getting window size",
                         MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
                 propHouse = cr.HotWater(propHouse);
                 Cursor = Cursors.Arrow;
 
-                MessageBox.Show("Please save and check results", "REF changes made");
                 SaveFileDialog sfd = new SaveFileDialog
                 {
                     Filter = "House File|*.h2k",
@@ -144,6 +146,7 @@ namespace HotPort
                 {
                     propHouse.Save(sfd.FileName);
                 }
+                ExcelHelper.CloseCachedDocuments();
             }
         }
         private void CreatePropButton_Click(object sender, RoutedEventArgs e)
@@ -163,7 +166,6 @@ namespace HotPort
                 return;
             }
             Cursor = Cursors.Wait;
-
             XDocument template = new XDocument(XDocument.Load(templatePath));
             CreateProp cp = new CreateProp(excelFilePath, template);
             CreateProp.ChangeAddress(proposedAddress);
@@ -321,7 +323,7 @@ namespace HotPort
                 cp.RemoveWindows();
                 cp.ExtractWindows();
             }
-
+            
             newHouse = CreateProp.GetHouse();
             Cursor = Cursors.Arrow;
             SaveFileDialog sfd = new SaveFileDialog
@@ -339,6 +341,7 @@ namespace HotPort
             template = null;
             templatePath = null;
             TemplateTextBlock.Text = "No template selected";
+            ExcelHelper.CloseCachedDocuments();
         }
         private void TemplateButton_Click(object sender, RoutedEventArgs e)
         {
