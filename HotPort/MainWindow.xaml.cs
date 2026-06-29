@@ -170,154 +170,15 @@ namespace HotPort
             CreateProp cp = new CreateProp(excelFilePath, template);
             CreateProp.ChangeAddress(proposedAddress);
 
-            try { cp.CityCheck(); }
+            try { cp.CreateHouse(); }
             catch(Exception ex)
             {
-                MessageBox.Show(ex.Message);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ChangeCityWeather(); }
-            catch(Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ChangeEquipment(); }
-            catch
-            {
                 Cursor = Cursors.Arrow;
-                MessageBox.Show("There was an error. Check furnace and HRV values in excel.",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, "Invalid data", MessageBoxButton.OK, MessageBoxImage.Error);
                 ExcelHelper.CloseCachedDocuments();
                 return;
             }
-            try { cp.CheckAC(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("Unexpected value in A/C selection.",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ChangeSpecs(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("There was an error. Check for typos in intersections/corners and volume/highest ceiling.",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ChangeWalls(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("There was an error. Check for typos in above grade walls and " +
-                    "check that the H2K template has all required elements.",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.CheckCeilings(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("There was an error retrieving ceiling data from the template. " +
-                    "Check that the H2K template has the required ceilings.",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ChangeFloors(); }
-            catch (FormatException ex)
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show(ex.Message, "Oopsie",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ExtraFloors(); }
-             catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("Unexpected value while adding floors. Have a typo in the EXPOSED FLOORS section?",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ExtraCeilings(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("Unexpected value while adding ceilings. Have a typo in the FLAT CEILINGS section?",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.CheckVaults(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("Unexpected value while adding vaults. Have a typo in the VAULTS section?",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ExtraWalls(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("Unexpected value while adding walls. Have a typo in the ABOVE GRADE WALLS section?",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ChangeBasment(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("Error while changing basement. " +
-                    "Check template has required basement elements then check spreadsheet for typos.",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.GasDHW(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("Error while changing GAS DHW " +
-                    "Check for typos in GAS DHW section.",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
-            try { cp.ElectricDHW(); }
-            catch
-            {
-                Cursor = Cursors.Arrow;
-                MessageBox.Show("Error while changing ELECTRIC DHW " +
-                    "Check for typos in ELECTRIC DHW section.",
-                    "Something went wrong",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                ExcelHelper.CloseCachedDocuments();
-                return;
-            }
+
             if (Properties.Settings.Default.WindowsCheckbox)
             {
                 cp.RemoveWindows();

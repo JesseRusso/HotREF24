@@ -71,7 +71,7 @@ namespace HotPort.Models
             }
 
             // If parsing fails, throw exception
-            throw new FormatException($"Cannot convert cell value '{cellValue}' from cell '{cellReference}' in sheet '{sheetName}' to double. The value is not a valid number.");
+            throw new FormatException($"Cannot convert cell value '{cellValue}' from cell '{cellReference}' in sheet '{sheetName}' to a decimal. The value is not a valid number.");
         }
         private static SpreadsheetDocument GetDocument(string filePath)
         {

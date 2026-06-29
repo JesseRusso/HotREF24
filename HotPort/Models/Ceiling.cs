@@ -24,28 +24,28 @@ namespace HotPort
         private string rValue;
         private bool vaultCheck = false;
 
-        public Ceiling(string name, string type, string area, string length, string slope, string heel)
+        public Ceiling(string name, string type, double area, double length, string slope, double heel)
         {
             ceilingName = name;
             ceilingType = type;
             ceilingSlope = slope;
-            areaMetric = Math.Round(System.Convert.ToDouble(area) * 0.092903, 4).ToString();
-            lengthMetric = Math.Round(System.Convert.ToDouble(length) * 0.3048, 4).ToString();
-            heelHeight = Math.Round(System.Convert.ToDouble(heel) * 0.3048, 3).ToString();
+            heelHeight = Math.Round(heel * 0.3048, 3).ToString();
+            areaMetric = Math.Round(area * 0.092903, 4).ToString();
+            lengthMetric = Math.Round(length * 0.3048, 4).ToString();
             SetType();
             SetSlope();
         }
 
-        public Ceiling(string name, string type, string area, string length, string slope, string rise, string heel, bool vault)
+        public Ceiling(string name, string type, double area, double length, string slope, string rise, double heel, bool vault)
         {
             vaultCheck = vault;
             ceilingName = name;
             ceilingType = type;
             ceilingSlope = slope;
             vaultRise = rise;
-            heelHeight = Math.Round(System.Convert.ToDouble(heel) * 0.3048, 3).ToString();
-            areaMetric = Math.Round(System.Convert.ToDouble(area) * 0.092903, 4).ToString();
-            lengthMetric = Math.Round(System.Convert.ToDouble(length) * 0.3048, 4).ToString();
+            heelHeight = Math.Round(heel * 0.3048, 3).ToString();
+            areaMetric = Math.Round(area * 0.092903, 4).ToString();
+            lengthMetric = Math.Round(length * 0.3048, 4).ToString();
             SetType();
             SetSlope();
         }

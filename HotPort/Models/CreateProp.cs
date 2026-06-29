@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Xml.Linq;
@@ -37,6 +38,28 @@ namespace HotPort
             GetBuilder();
             FindID(template);
         }
+
+        /**
+         * Calls all the methods required to fill house data from Excel
+         */
+        public void CreateHouse()
+        {
+            CityCheck();
+            ChangeCityWeather();
+            ChangeSpecs();
+            ChangeEquipment();
+            CheckAC();
+            ChangeWalls();
+            ExtraWalls();
+            CheckCeilings();
+            ExtraCeilings();
+            CheckVaults();
+            ChangeFloors();
+            ExtraFloors();
+            ChangeBasment();
+            GasDHW();
+            ElectricDHW();
+        }
         public static XDocument GetHouse()
         {
             return newHouse;
@@ -62,7 +85,7 @@ namespace HotPort
             maxID = idList.Max() + 1;
             ids.Clear();
         }
-        //Gets the builder name 
+        //Gets the builder name from the house file
         private static void GetBuilder()
         {
             string builderName = (from el in newHouse.Descendants("File").Descendants("BuilderName")
@@ -73,7 +96,7 @@ namespace HotPort
         //Checks special city cells P1:P5 in spreadsheet and sets
         //city-specific settings like weather station location,
         //NAI terrain info, and city name in specifications
-        public void CityCheck()
+        private void CityCheck()
         {
             string city = GetCellValue("Calc", "P1");
 
@@ -81,7 +104,7 @@ namespace HotPort
             {
                 throw new FormatException("!Calc P1 cannot be empty. Please select a city.");
             }
-            if(city == "Okotoks")
+            if (city == "Okotoks")
             {
                 newHouse.Element("HouseFile").Element("House").Element("NaturalAirInfiltration").Element("Specifications").Element("BuildingSite").Element("Terrain").SetAttributeValue("code", 3);
             }
@@ -91,11 +114,11 @@ namespace HotPort
         {
             string weatherStation = GetCellValue("Calc", "P6");
 
-            if(weatherStation ==  null || weatherStation == string.Empty)
+            if (weatherStation == null || weatherStation == string.Empty)
             {
                 throw new ArgumentException("Invalid data found in the Weather zone field; !Calc P6");
             }
-            
+
             switch (weatherStation.ToLower())
             {
                 case "cop upper":
@@ -125,12 +148,14 @@ namespace HotPort
             wallRValue = first.Element("Construction").Element("Type").Attribute("rValue").Value.ToString();
             string? rimRValue = first.Element("Components")?.Element("FloorHeader")?.Element("Construction")?.Element("Type")?.Attribute("rValue")?.Value.ToString();
 
-            first.Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G21")) * 0.3048, 3));
-            first.Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "H21")) * 0.3048, 3));
+            //first.Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G21")) * 0.3048, 3));
+            //first.Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "H21")) * 0.3048, 3));
+            first.Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "G21") * 0.3048, 3));
+            first.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H21") * 0.3048, 3));
             first.Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "E21"));
             first.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F21"));
-            first.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "K21")) * 0.3048, 3));
-            first.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "J21")) * 0.3048, 3));
+            first.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "K21") * 0.3048, 3));
+            first.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "J21") * 0.3048, 3));
 
             XElement second = (XElement)(from el in newHouse.Descendants("Wall")
                                          where el.Element("Label").Value.Contains("2nd")
@@ -145,14 +170,16 @@ namespace HotPort
             }
             else
             {
-                second.Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G24")) * 0.3048, 3));
-                second.Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "H24")) * 0.3048, 3));
+                second.Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "G24") * 0.3048, 3));
+                second.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H24") * 0.3048, 3));
                 second.Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "E24"));
                 second.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F24"));
 
-                if(Convert.ToDouble(GetCellValue("Calc", "J24")) > 0)
+                double secondRimPerim = GetDoubleCellValue("Calc", "J24");
+
+                if(secondRimPerim > 0)
                 {
-                    second.Element("Components")?.Add(FloorHeader.NewJoist(GetCellValue("Calc", "K24"), rimRValue, GetCellValue("Calc", "J24"), maxID.ToString()));
+                    second.Element("Components")?.Add(FloorHeader.NewJoist(GetDoubleCellValue("Calc", "K24").ToString(), rimRValue, secondRimPerim.ToString(), maxID.ToString()));
                     maxID++;
                 }
             }
@@ -211,12 +238,12 @@ namespace HotPort
             }
             else
             {
-                garage.Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G30")) * 0.3048, 3));
-                garage.Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "H30")) * 0.3048, 3));
+                garage.Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "G30") * 0.3048, 3));
+                garage.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H30") * 0.3048, 3));
                 garage.Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "E30"));
                 garage.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F30"));
-                garage.Element("Components").Element("FloorHeader")?.Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "K38")) * 0.3048, 3));
-                garage.Element("Components").Element("FloorHeader")?.Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "J30")) * 0.3048, 3));
+                garage.Element("Components").Element("FloorHeader")?.Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "K38") * 0.3048, 3));
+                garage.Element("Components").Element("FloorHeader")?.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "J30") * 0.3048, 3));
             }
         }
 
@@ -241,22 +268,17 @@ namespace HotPort
                 string twName = GetCellValue("Calc", "A27");
                 string twCorners = GetCellValue("Calc", "E27");
                 string twInts = GetCellValue("Calc", "F27");
-                string twHeight = GetCellValue("Calc", "G27");
-                string twPerim = GetCellValue("Calc", "H27");
+                double twHeight = GetDoubleCellValue("Calc", "G27");
+                double twPerim = GetDoubleCellValue("Calc", "H27");
 
-                if(double.TryParse(twHeight, out double twh) && double.TryParse(twPerim, out double twp))
+                if( twPerim > 0)
                 {
                     AddNewWall(twName, twCorners, twInts, twHeight, twPerim, tallWallRValue);
                 }
-                else
-                {
-                    throw new IOException("Error parsing Tall Wall 2 height or perimeter");
-                }
             }
-            if (!Double.TryParse(GetCellValue("Calc", "H31"), out double perim) || !Double.TryParse(GetCellValue("Calc", "G31"), out double ht))
-            {
-                throw new IOException("Error parsing Tall Wall perimeter or height");
-            }
+            double ht = GetDoubleCellValue("Calc", "G31");
+            double perim = GetDoubleCellValue("Calc", "H31");
+
             tall.Element("Measurements").SetAttributeValue("height", Math.Round(ht * 0.3048, 3));
             tall.Element("Measurements").SetAttributeValue("perimeter", Math.Round(perim * 0.3048, 3));
             tall.Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "E31"));
@@ -276,8 +298,8 @@ namespace HotPort
             }
             else
             {
-                plumbing.Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G34")) * 0.3048, 3));
-                plumbing.Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "H34")) * 0.3048, 3));
+                plumbing.Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "G34") * 0.3048, 3));
+                plumbing.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H34") * 0.3048, 3));
                 plumbing.Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "E34"));
                 plumbing.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F34"));
             }
@@ -300,13 +322,13 @@ namespace HotPort
                                             select el).First();
 
                 over4.SetAttributeValue("exposedSurfacePerimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "E38")) * 0.3048, 4));
-                over4.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "D38")) * 0.3048, 4));
-                over4.Element("Floor").Element("Measurements").SetAttributeValue("area", Math.Round(Convert.ToDouble(GetCellValue("Calc", "F38")) * 0.092903, 4));
-                over4.Element("Wall").Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G38")) * 0.3048, 4));
-                over4.Element("Wall").Element("Measurements").SetAttributeValue("depth", Math.Round(Convert.ToDouble(GetCellValue("Calc", "H38")) * 0.3048, 4));
+                over4.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "D38") * 0.3048, 4));
+                over4.Element("Floor").Element("Measurements").SetAttributeValue("area", Math.Round(GetDoubleCellValue("Calc", "F38") * 0.092903, 4));
+                over4.Element("Wall").Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "G38") * 0.3048, 4));
+                over4.Element("Wall").Element("Measurements").SetAttributeValue("depth", Math.Round(GetDoubleCellValue("Calc", "H38") * 0.3048, 4));
                 over4.Element("Wall").Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "J38"));
-                over4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "K38")) * 0.3048, 4));
-                over4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "L38")) * 0.3048, 4));
+                over4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "K38") * 0.3048, 4));
+                over4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "L38") * 0.3048, 4));
 
                 string pony = GetCellValue("Calc", "I38");
                 if (double.TryParse(pony, out double height) && height > 0D)
@@ -347,14 +369,14 @@ namespace HotPort
                                          select el).First();
             if (check)
             {
-                under4.SetAttributeValue("exposedSurfacePerimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "E39")) * 0.3048, 4));
-                under4.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "D39")) * 0.3048, 4));
-                under4.Element("Floor").Element("Measurements").SetAttributeValue("area", Math.Round(Convert.ToDouble(GetCellValue("Calc", "F39")) * 0.092903, 4));
-                under4.Element("Wall").Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G39")) * 0.3048, 4));
-                under4.Element("Wall").Element("Measurements").SetAttributeValue("depth", Math.Round(Convert.ToDouble(GetCellValue("Calc", "H39")) * 0.3048, 4));
+                under4.SetAttributeValue("exposedSurfacePerimeter", Math.Round(GetDoubleCellValue("Calc", "E39") * 0.3048, 4));
+                under4.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "D39") * 0.3048, 4));
+                under4.Element("Floor").Element("Measurements").SetAttributeValue("area", Math.Round(GetDoubleCellValue("Calc", "F39") * 0.092903, 4));
+                under4.Element("Wall").Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "G39") * 0.3048, 4));
+                under4.Element("Wall").Element("Measurements").SetAttributeValue("depth", Math.Round(GetDoubleCellValue("Calc", "H39") * 0.3048, 4));
                 under4.Element("Wall").Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "J39"));
-                under4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "K39")) * 0.3048, 4));
-                under4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "L39")) * 0.3048, 4));
+                under4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "K39") * 0.3048, 4));
+                under4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "L39") * 0.3048, 4));
 
                 string pony = GetCellValue("Calc", "I39");
                 if(double.TryParse(pony, out double height) && height > 0D)
@@ -386,9 +408,9 @@ namespace HotPort
                                        select el).First();
             if (check)
             {
-                slab.SetAttributeValue("exposedSurfacePerimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "E40")) * 0.3048, 4));
-                slab.Element("Floor").Element("Measurements").SetAttributeValue("area", Math.Round(Convert.ToDouble(GetCellValue("Calc", "F40")) * 0.092903, 4));
-                slab.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "D40")) * 0.3048, 4));
+                slab.SetAttributeValue("exposedSurfacePerimeter", Math.Round(GetDoubleCellValue("Calc", "E40") * 0.3048, 4));
+                slab.Element("Floor").Element("Measurements").SetAttributeValue("area", Math.Round(GetDoubleCellValue("Calc", "F40") * 0.092903, 4));
+                slab.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "D40") * 0.3048, 4));
             }
             else
             {
@@ -464,14 +486,10 @@ namespace HotPort
                 hrvModel += " & " + GetCellValue("Summary", "E92");
             }
 
-            try
-            {
-                hrvFlowrate = Math.Round(GetDoubleCellValue("General", "H4"), 1);
-                fanPower = Math.Round(GetDoubleCellValue("General", "K4"), 1).ToString();
-            }
-            catch (FormatException) { throw; }
+            hrvFlowrate = Math.Round(GetDoubleCellValue("General", "H4"), 1);
+            fanPower = Math.Round(GetDoubleCellValue("General", "K4"), 1).ToString();
 
-            if (Convert.ToDouble(GetCellValue("General", "I4")) <= 0)
+            if (GetDoubleCellValue("General", "I4") <= 0)
             {
                 foreach (XElement vent in newHouse.Descendants("WholeHouseVentilatorList"))
                 {
@@ -497,10 +515,9 @@ namespace HotPort
         private void ChangeFurnace()
         {
             string furnaceModel = GetCellValue("Summary", "B78");
-            string furnaceOutput = GetCellValue("General", "C4");
-            double btus = Convert.ToDouble(furnaceOutput);
+            double furnaceBtus = GetDoubleCellValue("General", "C4");
 
-            if (Convert.ToDouble(GetCellValue("General", "B4")) > 0)
+            if (GetDoubleCellValue("General", "B4") > 0)
             {
                 furnaceModel += $" & {GetCellValue("Summary", "B79")}";
             }
@@ -508,7 +525,7 @@ namespace HotPort
             foreach (XElement furn in newHouse.Descendants("Furnace"))
             {
                 furn.Element("Specifications")?.SetAttributeValue("efficiency", GetCellValue("General", "A5"));
-                furn.Element("Specifications")?.Element("OutputCapacity")?.SetAttributeValue("value", Math.Round(btus * 0.00029307107, 5).ToString());
+                furn.Element("Specifications")?.Element("OutputCapacity")?.SetAttributeValue("value", Math.Round(furnaceBtus * 0.00029307107, 5).ToString());
                 furn.Element("EquipmentInformation").Element("Manufacturer").SetValue(GetCellValue("Summary", "A78"));
                 furn.Element("EquipmentInformation").Element("Model").SetValue(furnaceModel);
             }
@@ -540,9 +557,9 @@ namespace HotPort
         public void ElectricDHW()
         {
             bool isPrimary = false;
-            if (Convert.ToDouble(GetCellValue("General", "I32")) > 0)
+            if (GetDoubleCellValue("General", "I32") > 0)
             {
-                if (Convert.ToDouble(GetCellValue("General", "P4")) <= 0)
+                if (GetDoubleCellValue("General", "P4") <= 0)
                 {
                     isPrimary = true;
                 }
@@ -561,7 +578,7 @@ namespace HotPort
         public void CheckAC()
         {
             string ACBtus = GetCellValue("General", "Q26");
-            if (Convert.ToInt32(ACBtus) > 0)
+            if (int.TryParse(ACBtus, out int cap) && cap > 0)
             {
                 XElement? bsmtTemps = newHouse?.Element("HouseFile")?.Element("House")?.Element("Temperatures")?.Element("Basement");
                 bsmtTemps?.SetAttributeValue("cooled", "true");
@@ -611,28 +628,19 @@ namespace HotPort
         //Changes values in specifications screen along with the house volume and highest ceiling height
         public void ChangeSpecs()
         {
-            string secondFloor = GetCellValue("Calc", "E4");
-            string aboveGrade = GetCellValue("Calc", "E6");
-            string belowGrade = GetCellValue("Calc", "F6");
-            string type = GetCellValue("Calc", "K5");
+            double aboveGrade = GetDoubleCellValue("Calc", "E6");
+            double belowGrade = GetDoubleCellValue("Calc", "F6");
 
             foreach (XElement grade in newHouse.Descendants("Specifications").Descendants("HeatedFloorArea"))
             {
-                double areaAbove = Convert.ToDouble(aboveGrade);
-                double areaBelow = Convert.ToDouble(belowGrade);
-                areaAbove = Math.Round(areaAbove * 0.092903, 1);
-                areaBelow = Math.Round(areaBelow * 0.092903, 1);
-                aboveGrade = areaAbove.ToString();
-                belowGrade = areaBelow.ToString();
-
-                grade.SetAttributeValue("aboveGrade", aboveGrade);
-                grade.SetAttributeValue("belowGrade", belowGrade);
+                grade.SetAttributeValue("aboveGrade", Math.Round(aboveGrade * 0.092903, 1));
+                grade.SetAttributeValue("belowGrade", Math.Round(belowGrade * 0.092903, 1));
             }
 
             foreach (XElement infil in newHouse.Descendants("NaturalAirInfiltration"))
             {
-                infil.Element("Specifications").Element("House").SetAttributeValue("volume", Math.Round(Convert.ToDouble(GetCellValue("Calc", "Q49")) * 0.02831684609, 4).ToString());
-                infil.Element("Specifications").Element("BuildingSite").SetAttributeValue("highestCeiling", Math.Round(Convert.ToDouble(GetCellValue("Calc", "M51")) * 0.3048, 4).ToString());
+                infil.Element("Specifications").Element("House").SetAttributeValue("volume", Math.Round(GetDoubleCellValue("Calc", "Q49") * 0.02831684609, 4).ToString());
+                infil.Element("Specifications").Element("BuildingSite").SetAttributeValue("highestCeiling", Math.Round(GetDoubleCellValue("Calc", "M51") * 0.3048, 4).ToString());
             }
 
             //This section gets the number of corners from each floor and finds the maximum value. Then sets the plan shape 
@@ -758,7 +766,8 @@ namespace HotPort
         public void ChangeFloors()
         {
             double garFlrArea, garFlrLength;
-            bool garPresent = Double.TryParse(GetCellValue("Calc", "P21"), out double area) && area > 0;
+            garFlrArea = GetDoubleCellValue("Calc", "P21");
+            bool garPresent = garFlrArea > 0;
 
             XElement garFlr = (XElement)(from el in newHouse.Descendants("Floor")
                                          where el.Element("Label").Value.ToLower().Contains("garage")
@@ -773,13 +782,8 @@ namespace HotPort
 
             if (garPresent)
             {
-                try
-                {
-                    garFlrLength = GetDoubleCellValue("Calc", "O21");
-                }
-                catch(FormatException ex) { throw; }
-
-                garFlr.Element("Measurements")?.SetAttributeValue("area", Math.Round(area * 0.092903, 4));
+                garFlrLength = GetDoubleCellValue("Calc", "O21");
+                garFlr.Element("Measurements")?.SetAttributeValue("area", Math.Round(garFlrArea * 0.092903, 4));
                 garFlr.Element("Measurements")?.SetAttributeValue("length", Math.Round(garFlrLength * 0.3048, 4));
                 garFlr.Element("Label")?.SetValue(GetCellValue("Calc", "L21"));
             }
@@ -794,8 +798,8 @@ namespace HotPort
             int startRow = 22;
             int endRow = 34;
             int currentRow = startRow;
-            string area;
-            string length;
+            double area;
+            double length;
             string name;
 
             for (int i = startRow; i <= endRow; i++)
@@ -805,8 +809,8 @@ namespace HotPort
                 if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
 
                 {
-                    area = GetCellValue("Calc", currentCell);
-                    length = GetCellValue("Calc", "O" + currentRow);
+                    area = GetDoubleCellValue("Calc", currentCell);
+                    length = GetDoubleCellValue("Calc", "O" + currentRow);
                     name = GetCellValue("Calc", "L" + currentRow);
 
                     NewFloor(name, length, area);
@@ -821,10 +825,10 @@ namespace HotPort
             int endRow = 16;
             int currentRow = startRow;
             string type;
-            string length;
-            string area;
+            double length;
+            double area;
             string slope;
-            string heel;
+            double heel;
             string name;
             List<Ceiling> ceilings = new List<Ceiling>();
 
@@ -834,12 +838,12 @@ namespace HotPort
                 string cellValue = GetCellValue("Calc", currentCell);
                 if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
                 {
-                    area = GetCellValue("Calc", currentCell);
-                    length = GetCellValue("Calc", "D" + currentRow);
+                    area = GetDoubleCellValue("Calc", currentCell);
+                    length = GetDoubleCellValue("Calc", "D" + currentRow);
                     name = GetCellValue("Calc", "A" + currentRow);
                     type = GetCellValue("Calc", "C" + currentRow);
                     slope = GetCellValue("Calc", "F" + currentRow);
-                    heel = GetCellValue("Calc", "H" + currentRow);
+                    heel = GetDoubleCellValue("Calc", "H" + currentRow);
                     ceilings.Add(new Ceiling(name, type, area, length, slope, heel));
                     ceilingCount = ceilings.Count();
                 }
@@ -859,12 +863,12 @@ namespace HotPort
             int endRow = 17;
             int currentRow = startRow;
             string type;
-            string length;
-            string area;
+            double length;
+            double area;
             string slope;
             string name;
             string rise;
-            string heel = GetCellValue("Calc", "H10");
+            double heel = GetDoubleCellValue("Calc", "H10");
             List<Ceiling> vaults = new List<Ceiling>();
 
             for (int i = startRow; i <= endRow; i++)
@@ -873,8 +877,8 @@ namespace HotPort
                 string cellValue = GetCellValue("Calc", currentCell);
                 if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
                 {
-                    area = GetCellValue("Calc", currentCell);
-                    length = GetCellValue("Calc", "L" + currentRow);
+                    area = GetDoubleCellValue("Calc", currentCell);
+                    length = GetDoubleCellValue("Calc", "L" + currentRow);
                     name = GetCellValue("Calc", "I" + currentRow);
                     type = GetCellValue("Calc", "AD" + currentRow);
                     slope = GetCellValue("Calc", "N" + currentRow);
@@ -890,10 +894,10 @@ namespace HotPort
         }
 
         //Creates new walls that are required but not included in the template. Uses R value from the first floor
-        private void AddNewWall(string name, string corners, string intersections, string height, string perim, string rValue)
+        private void AddNewWall(string name, string corners, string intersections, double height, double perim, string rValue)
         {
-            string heightMetric = Math.Round(Convert.ToDouble(height) * 0.3048, 4).ToString();
-            string perimMetric = Math.Round(Convert.ToDouble(perim) * 0.3048, 4).ToString();
+            string heightMetric = Math.Round(height * 0.3048, 4).ToString();
+            string perimMetric = Math.Round(perim * 0.3048, 4).ToString();
             XElement comp = (XElement)(from el in newHouse.Descendants("Components")
                                        select el).First();
 
@@ -919,10 +923,10 @@ namespace HotPort
         }
 
         //Creates new exposed floors that are not over a garage
-        private void NewFloor(string name, string length, string area)
+        private void NewFloor(string name, double length, double area)
         {
-            string lengthMetric = Math.Round(Convert.ToDouble(length) * 0.3048, 4).ToString();
-            string areaMetric = Math.Round(Convert.ToDouble(area) * 0.092903, 4).ToString();
+            string lengthMetric = Math.Round(length * 0.3048, 4).ToString();
+            string areaMetric = Math.Round(area * 0.092903, 4).ToString();
 
             XElement comp = (XElement)(from el in newHouse.Descendants("Components")
                                        select el).First();
@@ -955,15 +959,15 @@ namespace HotPort
                 string name;
                 string corners;
                 string intersections;
-                string height;
-                string perim;
+                double height;
+                double perim;
                 string currentCell = column + currentRow.ToString();
                 string cellValue = GetCellValue("Calc", currentCell);
 
                 if (double.TryParse(cellValue, out double cellValueDouble) && cellValueDouble > 0)
                 {
-                    perim = cellValue;
-                    height = GetCellValue("Calc", "G" + currentRow);
+                    perim = cellValueDouble;
+                    height = GetDoubleCellValue("Calc", "G" + currentRow);
                     name = GetCellValue("Calc", "A" + currentRow);
                     corners = GetCellValue("Calc", "E" + currentRow);
                     intersections = GetCellValue("Calc", "F" + currentRow);
