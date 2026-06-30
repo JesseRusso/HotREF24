@@ -1,4 +1,4 @@
-﻿<Window x:Class="HotPort.MainWindow"
+<Window x:Class="HotPort.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -16,25 +16,26 @@
             <RowDefinition Height="0.8*"/>
             <RowDefinition />
         </Grid.RowDefinitions>
-        
+
         <Menu Grid.Column="0" Grid.Row="0" Height="20" Width="{Binding Width, ElementName=grid}" VerticalAlignment="Top" Grid.ColumnSpan="2">
             <MenuItem Header="Settings" HorizontalAlignment="Left" Grid.IsSharedSizeScope="True" Margin="15,0,0,0" TabIndex="0">
-                <MenuItem x:Name="DefaultDirectory" Header="Default template directory" Click="DefaultDirectory_Click" HorizontalAlignment="Left" MaxHeight="20"     ScrollViewer.VerticalScrollBarVisibility="Disabled"/>
+                <MenuItem Header="Default template directory" Command="{Binding DefaultDirectoryCommand}" HorizontalAlignment="Left" MaxHeight="20" ScrollViewer.VerticalScrollBarVisibility="Disabled"/>
             </MenuItem>
         </Menu>
-        
-        <Button x:Name="WorksheetButton" Content="Select Worksheet" HorizontalAlignment="Left" Margin="20,35,0,0" VerticalAlignment="Top" Width="320" Height="20" Click="WorksheetButton_Click" Grid.ColumnSpan="2" TabIndex="1"/>
-        <Button x:Name="TemplateButton" Content="Select Template" HorizontalAlignment="Left" Margin="20,31,0,0" VerticalAlignment="Top" Width="190" Grid.Row="1" Height="20" Click="TemplateButton_Click" TabIndex="2"/>
-        <CheckBox x:Name="WindowCheckbox" Content="Include Windows" Grid.Row="1" Margin="230,35,10,76" IsChecked="{Binding Source={x:Static properties:Settings.Default},Path=WindowsCheckbox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.ColumnSpan="2" TabIndex="3"/>
-        <Button x:Name="CreatePropButton" Content="Create Proposed File" HorizontalAlignment="Left" Margin="20,99,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.Row="1" Click="CreatePropButton_Click" Grid.ColumnSpan="2" TabIndex="4"/>
-        <Button x:Name="SelectPropFileButton" Content="Select Proposed File" HorizontalAlignment="Left" Margin="20,50,0,0" VerticalAlignment="Top" Width="240" Height="20" Grid.Row="2" Click="SelectPropFileButton_Click" TabIndex="5"/>
-        <Button x:Name="CreateRefButton" Content="Create REF" HorizontalAlignment="Left" Width="320" Grid.Row="2" Height="20" VerticalAlignment="Top" Click="CreateRefButton_Click" Margin="20,120,0,0" Grid.ColumnSpan="2" TabIndex="6"/>
-        <TextBlock x:Name="worksheetTextBlock" HorizontalAlignment="Left" Margin="20,60,0,0" TextWrapping="Wrap" Text="No worksheet selected" VerticalAlignment="Top" Width="190" RenderTransformOrigin="0.5,0.692"/>
-        <TextBlock x:Name="ProposedFileTextBlock" HorizontalAlignment="Left" Margin="20,0,0,0" Grid.Row="2" TextWrapping="Wrap" VerticalAlignment="Center" Width="240" Text="No file selected"/>
-        <ComboBox x:Name="ZoneSelectBox" HorizontalAlignment="Right" Margin="0,50,20,0" Grid.Row="2" VerticalAlignment="Top" Width="75" Height="20" Grid.ColumnSpan="2" />
+
+        <Button Content="Select Worksheet" Command="{Binding WorksheetCommand}" HorizontalAlignment="Left" Margin="20,35,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.ColumnSpan="2" TabIndex="1"/>
+        <Button Content="Select Template" Command="{Binding TemplateCommand}" HorizontalAlignment="Left" Margin="20,31,0,0" VerticalAlignment="Top" Width="190" Grid.Row="1" Height="20" TabIndex="2"/>
+        <CheckBox Content="Include Windows" Grid.Row="1" Margin="230,35,10,76" IsChecked="{Binding Source={x:Static properties:Settings.Default},Path=WindowsCheckbox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.ColumnSpan="2" TabIndex="3"/>
+        <Button Content="Create Proposed File" Command="{Binding CreatePropCommand}" HorizontalAlignment="Left" Margin="20,99,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.Row="1" Grid.ColumnSpan="2" TabIndex="4"/>
+        <Button Content="Select Proposed File" Command="{Binding SelectPropFileCommand}" HorizontalAlignment="Left" Margin="20,50,0,0" VerticalAlignment="Top" Width="240" Height="20" Grid.Row="2" TabIndex="5"/>
+        <Button Content="Create REF" Command="{Binding CreateRefCommand}" HorizontalAlignment="Left" Width="320" Grid.Row="2" Height="20" VerticalAlignment="Top" Margin="20,120,0,0" Grid.ColumnSpan="2" TabIndex="6"/>
+        <TextBlock HorizontalAlignment="Left" Margin="20,60,0,0" TextWrapping="Wrap" Text="{Binding WorksheetLabel}" VerticalAlignment="Top" Width="190" RenderTransformOrigin="0.5,0.692"/>
+        <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Grid.Row="2" TextWrapping="Wrap" VerticalAlignment="Center" Width="240" Text="{Binding ProposedFileLabel}"/>
+        <ComboBox HorizontalAlignment="Right" Margin="0,50,20,0" Grid.Row="2" VerticalAlignment="Top" Width="75" Height="20" Grid.ColumnSpan="2"
+                  ItemsSource="{Binding ZoneNames}" SelectedIndex="{Binding SelectedZoneIndex}"/>
 
         <GroupBox Header="PROPOSED" Margin="10,10,10,0" Grid.Row="1" BorderBrush="#FF979CA0" Panel.ZIndex="-1" Grid.ColumnSpan="2">
-            <TextBlock x:Name="TemplateTextBlock" HorizontalAlignment="Left" Margin="5,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" RenderTransformOrigin="0.487,1.646" Width="300" Text="No template selected"/>
+            <TextBlock HorizontalAlignment="Left" Margin="5,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" RenderTransformOrigin="0.487,1.646" Width="300" Text="{Binding TemplateLabel}"/>
         </GroupBox>
         <GroupBox Header="REFERENCE" Margin="10,134,10,10" Grid.Row="1" Panel.ZIndex="-1" BorderBrush="#FF979CA0" Grid.RowSpan="2" Grid.ColumnSpan="2">
             <Label Content="Zone" HorizontalAlignment="Left" Margin="250,0,0,0" VerticalAlignment="Top" Width="75" Height="27"/>
