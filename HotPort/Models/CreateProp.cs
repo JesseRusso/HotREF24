@@ -524,7 +524,7 @@ namespace HotPort
             // Changes furnace output capacity and EF values
             foreach (XElement furn in newHouse.Descendants("Furnace"))
             {
-                furn.Element("Specifications")?.SetAttributeValue("efficiency", GetCellValue("General", "A5"));
+                furn.Element("Specifications")?.SetAttributeValue("efficiency", GetCellValue("General", "A6"));
                 furn.Element("Specifications")?.Element("OutputCapacity")?.SetAttributeValue("value", Math.Round(furnaceBtus * 0.00029307107, 5).ToString());
                 furn.Element("EquipmentInformation").Element("Manufacturer").SetValue(GetCellValue("Summary", "A78"));
                 furn.Element("EquipmentInformation").Element("Model").SetValue(furnaceModel);
