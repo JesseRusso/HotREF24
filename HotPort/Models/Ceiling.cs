@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Xml.Linq;
+using HotPort.Models;
 
 namespace HotPort
 {
@@ -23,9 +24,11 @@ namespace HotPort
         private string slopeName = "";
         private string rValue;
         private bool vaultCheck = false;
+        private CreateProp cp;
 
-        public Ceiling(string name, string type, double area, double length, string slope, double heel)
+        public Ceiling(string name, string type, double area, double length, string slope, double heel, CreateProp cp)
         {
+            this.cp = cp;
             ceilingName = name;
             ceilingType = type;
             ceilingSlope = slope;
@@ -36,8 +39,9 @@ namespace HotPort
             SetSlope();
         }
 
-        public Ceiling(string name, string type, double area, double length, string slope, string rise, double heel, bool vault)
+        public Ceiling(string name, string type, double area, double length, string slope, string rise, double heel, bool vault, CreateProp cp)
         {
+            this.cp = cp;
             vaultCheck = vault;
             ceilingName = name;
             ceilingType = type;
@@ -58,19 +62,19 @@ namespace HotPort
                     typeCode = "2";
                     typeEng = "Attic/gable";
                     typeFr = "Combles/pignon";
-                    rValue = CreateProp.ceilingRValue;
+                    rValue = cp.ceilingRValue;
                     break;
                 case "hip":
                     typeCode = "3";
                     typeEng = "Attic/hip";
                     typeFr = "Combles/arête";
-                    rValue = CreateProp.ceilingRValue;
+                    rValue = cp.ceilingRValue;
                     break;
                 case "cathedral":
                     typeCode = "4";
                     typeEng = "Cathedral";
                     typeFr = "Cathédrale";
-                    rValue = CreateProp.cathedralRValue;
+                    rValue = cp.cathedralRValue;
                     break;
                 case "flat":
                     typeCode = "5";
@@ -78,24 +82,24 @@ namespace HotPort
                     typeFr = "Plat";
                     slopeName = "Flat";
                     ceilingSlope = "0";
-                    rValue = CreateProp.flatCeilingRValue;
+                    rValue = cp.flatCeilingRValue;
                     break;
                 case "scissor":
                     typeCode = "6";
                     typeEng = "Scissor";
                     typeFr = "Ciseaux";
-                    rValue = CreateProp.vaultRValue;
+                    rValue = cp.vaultRValue;
                     break;
                 default:
                     typeCode = "3";
                     typeEng = "Attic/hip";
                     typeFr = "Combles/arête";
-                    rValue = CreateProp.ceilingRValue;
+                    rValue = cp.ceilingRValue;
                     break;
             }
-            if (CreateProp.builder.ToLower().Contains("mckee") && Convert.ToDouble(vaultRise) < 5)
+            if (cp.builder.ToLower().Contains("mckee") && Convert.ToDouble(vaultRise) < 5)
             {
-                rValue = CreateProp.ceilingRValue;
+                rValue = cp.ceilingRValue;
             }
         }
 
@@ -173,11 +177,11 @@ namespace HotPort
             }
             else slopeName = ceilingSlope + "/12";
 
-            XElement comp = (from el in CreateProp.newHouse.Descendants("Components")
+            XElement comp = (from el in cp.newHouse.Descendants("Components")
                                  select el).First();
             comp.Add(
                 new XElement("Ceiling",
-                new XAttribute("id", CreateProp.maxID),
+                new XAttribute("id", cp.maxID),
                     new XElement("Label", ceilingName + " " + slopeName),
                     new XElement("Construction",
                         new XElement("Type",
@@ -196,7 +200,7 @@ namespace HotPort
                                 new XAttribute("value", slopeValue),
                                     new XElement("English", slopeEng),
                                     new XElement("French", slopeFr)))));
-            CreateProp.maxID++;
+            cp.maxID++;
         }
     }
 }

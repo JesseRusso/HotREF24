@@ -70,5 +70,17 @@ namespace HotPort.Properties {
                 this["WindowsCheckbox"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CodeLibDir {
+            get {
+                return ((string)(this["CodeLibDir"]));
+            }
+            set {
+                this["CodeLibDir"] = value;
+            }
+        }
     }
 }

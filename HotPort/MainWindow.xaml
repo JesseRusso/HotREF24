@@ -5,40 +5,148 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:HotPort.Properties"
         mc:Ignorable="d"
-        Title="HotREF" Height="400" Width="360" Closing="Window_Closing" ResizeMode="CanMinimize">
-    <Grid x:Name="grid" HorizontalAlignment="Center" Width="360" Margin="0,0,0,0" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="19*"/>
-            <ColumnDefinition Width="5*"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="0.5*"/>
-            <RowDefinition Height="0.8*"/>
-            <RowDefinition />
-        </Grid.RowDefinitions>
+        Title="HotREF" Height="540"  Width="380" Closing="Window_Closing" ResizeMode="CanMinimize">
 
-        <Menu Grid.Column="0" Grid.Row="0" Height="20" Width="{Binding Width, ElementName=grid}" VerticalAlignment="Top" Grid.ColumnSpan="2">
-            <MenuItem Header="Settings" HorizontalAlignment="Left" Grid.IsSharedSizeScope="True" Margin="15,0,0,0" TabIndex="0">
-                <MenuItem Header="Default template directory" Command="{Binding DefaultDirectoryCommand}" HorizontalAlignment="Left" MaxHeight="20" ScrollViewer.VerticalScrollBarVisibility="Disabled"/>
+    <DockPanel>
+        <!-- Settings menu spans both tabs -->
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="Settings" Margin="15,0,0,0">
+                <MenuItem Header="Default template directory" Command="{Binding DefaultDirectoryCommand}"/>
+                <MenuItem Header="Code library directory" Command="{Binding CodeLibDirectoryCommand}"/>
             </MenuItem>
         </Menu>
 
-        <Button Content="Select Worksheet" Command="{Binding WorksheetCommand}" HorizontalAlignment="Left" Margin="20,35,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.ColumnSpan="2" TabIndex="1"/>
-        <Button Content="Select Template" Command="{Binding TemplateCommand}" HorizontalAlignment="Left" Margin="20,31,0,0" VerticalAlignment="Top" Width="190" Grid.Row="1" Height="20" TabIndex="2"/>
-        <CheckBox Content="Include Windows" Grid.Row="1" Margin="230,35,10,76" IsChecked="{Binding Source={x:Static properties:Settings.Default},Path=WindowsCheckbox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.ColumnSpan="2" TabIndex="3"/>
-        <Button Content="Create Proposed File" Command="{Binding CreatePropCommand}" HorizontalAlignment="Left" Margin="20,99,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.Row="1" Grid.ColumnSpan="2" TabIndex="4"/>
-        <Button Content="Select Proposed File" Command="{Binding SelectPropFileCommand}" HorizontalAlignment="Left" Margin="20,50,0,0" VerticalAlignment="Top" Width="240" Height="20" Grid.Row="2" TabIndex="5"/>
-        <Button Content="Create REF" Command="{Binding CreateRefCommand}" HorizontalAlignment="Left" Width="320" Grid.Row="2" Height="20" VerticalAlignment="Top" Margin="20,120,0,0" Grid.ColumnSpan="2" TabIndex="6"/>
-        <TextBlock HorizontalAlignment="Left" Margin="20,60,0,0" TextWrapping="Wrap" Text="{Binding WorksheetLabel}" VerticalAlignment="Top" Width="190" RenderTransformOrigin="0.5,0.692"/>
-        <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Grid.Row="2" TextWrapping="Wrap" VerticalAlignment="Center" Width="240" Text="{Binding ProposedFileLabel}"/>
-        <ComboBox HorizontalAlignment="Right" Margin="0,50,20,0" Grid.Row="2" VerticalAlignment="Top" Width="75" Height="20" Grid.ColumnSpan="2"
-                  ItemsSource="{Binding ZoneNames}" SelectedIndex="{Binding SelectedZoneIndex}"/>
+        <!-- Worksheet selector spans both tabs -->
+        <StackPanel DockPanel.Dock="Top" Margin="20,6,20,4">
+            <Button Content="Select Worksheet" Command="{Binding WorksheetCommand}" Height="20" HorizontalAlignment="Stretch" TabIndex="1" Margin="0,5,0,0"/>
+            <TextBlock Text="{Binding WorksheetLabel}" Margin="0,3,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+        <TabControl Height="445">
+            <!-- ═══════════════════ ENERGUIDE TAB ═══════════════════ -->
+            <TabItem Header="Energuide" DataContext="{Binding Energuid}">
+                <Grid Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- 0: COD label -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 1: Select COD button -->
+                        <RowDefinition Height="10"/>
+                        <!-- 2: spacer -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 3: WALLS header -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 4: Main Wall -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 5: No-Clad Wall -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 6: Tall Wall -->
+                        <RowDefinition Height="10"/>
+                        <!-- 7: spacer -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 8: FLOOR HEADER header -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 9: Floor Header -->
+                        <RowDefinition Height="10"/>
+                        <!-- 10: spacer -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 11: CEILINGS header -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 12: Standard ceiling -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 13: Vault -->
+                        <RowDefinition Height="10"/>
+                        <!-- 14: spacer -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 15: FLOORS header -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 16: Exposed -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 17: Garage -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 18: template label -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 19: template button -->
+                        <RowDefinition Height="10"/>
+                        <!-- 20: spacer -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 21: Create button -->
+                    </Grid.RowDefinitions>
 
-        <GroupBox Header="PROPOSED" Margin="10,10,10,0" Grid.Row="1" BorderBrush="#FF979CA0" Panel.ZIndex="-1" Grid.ColumnSpan="2">
-            <TextBlock HorizontalAlignment="Left" Margin="5,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" RenderTransformOrigin="0.487,1.646" Width="300" Text="{Binding TemplateLabel}"/>
-        </GroupBox>
-        <GroupBox Header="REFERENCE" Margin="10,134,10,10" Grid.Row="1" Panel.ZIndex="-1" BorderBrush="#FF979CA0" Grid.RowSpan="2" Grid.ColumnSpan="2">
-            <Label Content="Zone" HorizontalAlignment="Left" Margin="250,0,0,0" VerticalAlignment="Top" Width="75" Height="27"/>
-        </GroupBox>
-    </Grid>
+                    <!-- COD file -->
+                    <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="{Binding CodLabel}" FontStyle="Italic" Margin="0,0,0,2"/>
+                    <Button Grid.Row="1" Grid.ColumnSpan="2" Content="Select Code Library" Command="{Binding SelectCodCommand}" Height="20" HorizontalAlignment="Left" Width="160"/>
+
+                    <!-- Walls -->
+                    <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="WALLS" FontWeight="Bold" Margin="0,0,0,2"/>
+                    <Label Grid.Row="4" Grid.Column="0" Content="Main Wall" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="4" Grid.Column="1" Height="20" ItemsSource="{Binding WallCodes}" SelectedItem="{Binding SelectedMainWallCode}"/>
+                    <Label Grid.Row="5" Grid.Column="0" Content="No-Clad Wall" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="5" Grid.Column="1" Height="20" Margin="0,2,0,0" ItemsSource="{Binding WallCodes}" SelectedItem="{Binding SelectedNoCladWallCode}"/>
+                    <Label Grid.Row="6" Grid.Column="0" Content="Tall Wall" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="6" Grid.Column="1" Height="20" Margin="0,2,0,0" ItemsSource="{Binding WallCodes}" SelectedItem="{Binding SelectedTallWallCode}"/>
+
+                    <!-- Floor header -->
+                    <TextBlock Grid.Row="8" Grid.ColumnSpan="2" Text="FLOOR HEADER" FontWeight="Bold" Margin="0,0,0,2"/>
+                    <Label Grid.Row="9" Grid.Column="0" Content="Floor Header" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="9" Grid.Column="1" Height="20" ItemsSource="{Binding FloorHeaderCodes}" SelectedItem="{Binding SelectedFloorHeaderCode}"/>
+
+                    <!-- Ceilings -->
+                    <TextBlock Grid.Row="11" Grid.ColumnSpan="2" Text="CEILINGS" FontWeight="Bold" Margin="0,0,0,2"/>
+                    <Label Grid.Row="12" Grid.Column="0" Content="Standard" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="12" Grid.Column="1" Height="20" ItemsSource="{Binding CeilingCodes}" SelectedItem="{Binding SelectedCeilingCode}"/>
+                    <Label Grid.Row="13" Grid.Column="0" Content="Vault" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="13" Grid.Column="1" Height="20" Margin="0,2,0,0" ItemsSource="{Binding VaultCodes}" SelectedItem="{Binding SelectedVaultCode}"/>
+
+                    <!-- Floors -->
+                    <TextBlock Grid.Row="15" Grid.ColumnSpan="2" Text="FLOORS" FontWeight="Bold" Margin="0,0,0,2"/>
+                    <Label Grid.Row="16" Grid.Column="0" Content="Exposed" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="16" Grid.Column="1" Height="20" ItemsSource="{Binding ExposedFloorCodes}" SelectedItem="{Binding SelectedExposedFloorCode}"/>
+                    <Label Grid.Row="17" Grid.Column="0" Content="Garage" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="17" Grid.Column="1" Height="20" Margin="0,2,0,0" ItemsSource="{Binding GarageFloorCodes}" SelectedItem="{Binding SelectedGarageFloorCode}"/>
+
+                    <!-- Template -->
+                    <TextBlock Grid.Row="18" Grid.ColumnSpan="2" Text="{Binding TemplateLabel}" FontStyle="Italic" Margin="0,0,0,2"/>
+                    <Button Grid.Row="19" Grid.ColumnSpan="2" Content="Select Template" Command="{Binding SelectTemplateCommand}" Height="20" HorizontalAlignment="Left" Width="160"/>
+
+                    <!-- Create button -->
+                    <Button Grid.Row="21" Grid.ColumnSpan="2" Content="Create Energuide File" Command="{Binding CreateEnerguidCommand}" Height="22" Margin="0,4,0,0"/>
+                </Grid>
+            </TabItem>
+
+
+            <!-- ═══════════════════ HOT2000 TAB ═══════════════════ -->
+            <TabItem Header="HOT2000">
+                <Grid x:Name="grid" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="46*"/>
+                        <ColumnDefinition Width="102*"/>
+                        <ColumnDefinition Width="39*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="0.8*"/>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <Button Content="Select Template" Command="{Binding TemplateCommand}" HorizontalAlignment="Left" Margin="20,30,0,0" VerticalAlignment="Top" Width="190" Grid.Row="0" Height="20" TabIndex="2" Grid.ColumnSpan="2"/>
+                    <CheckBox Content="Include Windows" Grid.Row="0" Margin="138,30,10,0" VerticalAlignment="Top" IsChecked="{Binding Source={x:Static properties:Settings.Default},Path=WindowsCheckbox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.ColumnSpan="2" TabIndex="3" Grid.Column="1"/>
+                    <Button Content="Create Proposed File" Command="{Binding CreatePropCommand}" HorizontalAlignment="Left" Margin="20,122,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.Row="0" Grid.ColumnSpan="3" TabIndex="4"/>
+                    <Button Content="Select Proposed File" Command="{Binding SelectPropFileCommand}" HorizontalAlignment="Left" Margin="20,20,0,0" VerticalAlignment="Top" Width="240" Height="20" Grid.Row="1" TabIndex="5" Grid.ColumnSpan="2"/>
+                    <Button Content="Create REF" Command="{Binding CreateRefCommand}" HorizontalAlignment="Left" Width="320" Grid.Row="1" Height="20" VerticalAlignment="Center" Margin="20,0,0,0" Grid.ColumnSpan="3" TabIndex="6"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="20,45,0,0" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" Width="300" Text="{Binding ProposedFileLabel}" Grid.ColumnSpan="3"/>
+                    <ComboBox HorizontalAlignment="Right" Margin="0,20,17,0" Grid.Row="1" VerticalAlignment="Top" Width="75" Height="20" Grid.ColumnSpan="2"
+                              ItemsSource="{Binding ZoneNames}" SelectedIndex="{Binding SelectedZoneIndex}" Grid.Column="1"/>
+                    <TextBlock TextWrapping="Wrap" VerticalAlignment="Top" Text="{Binding TemplateLabel}" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="300" Margin="20,55,0,0"/>
+                    <GroupBox Header="PROPOSED" Margin="10,0,10,21" Grid.Row="0" BorderBrush="#FF979CA0" Panel.ZIndex="-1" Grid.ColumnSpan="3"/>
+                    <GroupBox Header="REFERENCE" Margin="10,164,10,83" Panel.ZIndex="-1" BorderBrush="#FF979CA0" Grid.ColumnSpan="3" Grid.RowSpan="2">
+                        <Label Content="Zone" HorizontalAlignment="Left" Margin="262,0,0,0" VerticalAlignment="Top" Width="75" Height="27"/>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+    </DockPanel>
 </Window>

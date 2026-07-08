@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
-namespace HotPort
+namespace HotPort.Models
 {
     class CreateRef
     {

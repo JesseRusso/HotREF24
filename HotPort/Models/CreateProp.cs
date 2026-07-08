@@ -13,24 +13,25 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Xml.Linq;
 
-namespace HotPort
+namespace HotPort.Models
 {
     public class CreateProp
     {
-        private static string filePath;
-        public static XDocument newHouse;
-        public static string builder;
-        public static int maxID;
+        private string filePath;
+        public XDocument newHouse;
+        public string builder;
+        public int maxID;
         public string? wallRValue;
         public string? floorRValue;
-        public static string ceilingRValue;
-        public static string vaultRValue;
-        public static string cathedralRValue;
-        public static string flatCeilingRValue;
-        public static string tallWallRValue;
-        public static int ceilingCount = 1;
-        private static bool basementPresent = true;
-        private static int maxWindowRow = 62;
+        public string ceilingRValue;
+        public string vaultRValue;
+        public string cathedralRValue;
+        public string flatCeilingRValue;
+        public string tallWallRValue;
+        public int ceilingCount = 1;
+        private bool basementPresent = true;
+        private int maxWindowRow = 62;
+
         public CreateProp(string excelFilePath, XDocument template)
         {
             filePath = excelFilePath;
@@ -60,7 +61,7 @@ namespace HotPort
             GasDHW();
             ElectricDHW();
         }
-        public static XDocument GetHouse()
+        public XDocument GetHouse()
         {
             return newHouse;
         }
@@ -69,7 +70,7 @@ namespace HotPort
          * Finds the largest component ID in the template and stores it. 
          * New components such as windows and doors are assigned new IDs that must not conflict with existing IDs
          */
-        public static void FindID(XDocument newHouse)
+        public void FindID(XDocument newHouse)
         {
             List<string> ids = new();
             var hasID =
@@ -86,7 +87,7 @@ namespace HotPort
             ids.Clear();
         }
         //Gets the builder name from the house file
-        private static void GetBuilder()
+        private void GetBuilder()
         {
             string builderName = (from el in newHouse.Descendants("File").Descendants("BuilderName")
                                   where el.IsEmpty == false
@@ -192,7 +193,7 @@ namespace HotPort
         /*
          * Checks the spreadsheet to determine the correct number of storeys 
          */
-        public static void SetStoreys()
+        public void SetStoreys()
         {
             bool firstFloorHt = double.TryParse(GetCellValue("Calc", "E3"), out double firstHt) && firstHt > 0;
             bool firstPerim = double.TryParse(GetCellValue("Calc", "C3"), out double firstFlrP) && firstFlrP > 0;
@@ -550,7 +551,7 @@ namespace HotPort
                     string dhwEF = GetCellValue("Summary", "K77");
                     bool isUEF = !GetCellValue("General", "P6").Equals("0");
                     string drawPattern = GetCellValue("General", "P6");
-                    WaterHeater tank = new WaterHeater(dhwMake, dhwModel, dhwEF, dhwSize, false, isPrimary, isUEF, drawPattern);
+                    WaterHeater tank = new WaterHeater(dhwMake, dhwModel, dhwEF, dhwSize, false, isPrimary, isUEF, drawPattern, this);
                     tank.AddTank(basementPresent);
                 }
         }
@@ -570,7 +571,7 @@ namespace HotPort
                 bool isUEF = false;
                 string drawPattern = "none";
 
-                WaterHeater tank = new WaterHeater(electricTankMake, electricTankModel, electricTankEF, electricTankVolume, true, isPrimary, isUEF, drawPattern);
+                WaterHeater tank = new WaterHeater(electricTankMake, electricTankModel, electricTankEF, electricTankVolume, true, isPrimary, isUEF, drawPattern, this);
                 tank.AddTank(basementPresent);
             }
             }
@@ -611,7 +612,7 @@ namespace HotPort
         }
 
         //Separates the strings in the filename and writes them as the address in the file
-        public static void ChangeAddress(string address)
+        public void ChangeAddress(string address)
         {
             foreach (XElement add in newHouse.Descendants("Client").Descendants("StreetAddress"))
             {
@@ -694,7 +695,7 @@ namespace HotPort
         /*
          * Sets the house type in the specifications screen based on the selection made in the worksheet
          */
-        public static void SetHouseType()
+        public void SetHouseType()
         {
             foreach (XElement houseType in newHouse.Descendants("HouseType"))
             {
@@ -731,7 +732,7 @@ namespace HotPort
         /*
          * Changes the specifications screen to a MURB and adds required MURB elements
          */
-        private static void AddMurbData()
+        private void AddMurbData()
         {
             XElement? house = newHouse.Root.Element("House");
             XElement? specifications = house?.Element("Specifications");
@@ -755,7 +756,7 @@ namespace HotPort
         /*
          * Sets the evaluation date to the current date
          */
-        public static void SetDate()
+        public void SetDate()
         {
             XElement evalDate = newHouse.Element("HouseFile").Element("ProgramInformation").Element("File");
             DateTime dateTime = DateTime.UtcNow;
@@ -836,7 +837,7 @@ namespace HotPort
             {
                 string currentCell = column + currentRow.ToString();
                 string cellValue = GetCellValue("Calc", currentCell);
-                if ((cellValue != null) && cellValue != String.Empty && double.Parse(cellValue) > 0)
+                if (double.TryParse(cellValue, out double value) && value > 0)
                 {
                     area = GetDoubleCellValue("Calc", currentCell);
                     length = GetDoubleCellValue("Calc", "D" + currentRow);
@@ -844,12 +845,15 @@ namespace HotPort
                     type = GetCellValue("Calc", "C" + currentRow);
                     slope = GetCellValue("Calc", "F" + currentRow);
                     heel = GetDoubleCellValue("Calc", "H" + currentRow);
-                    ceilings.Add(new Ceiling(name, type, area, length, slope, heel));
-                    ceilingCount = ceilings.Count();
+
+                    Object[] args = { name, type, area, length, slope, heel };
+
+                    ceilings.Add(new Ceiling(name, type, area, length, slope, heel, this));
+                    //ceilingCount = ceilings.Count();
                 }
                 currentRow++;
             }
-            ceilingCount = ceilings.Count();
+            //ceilingCount = ceilings.Count();
             foreach (Ceiling c in ceilings)
             {
                 c.AddCeiling();
@@ -883,7 +887,7 @@ namespace HotPort
                     type = GetCellValue("Calc", "AD" + currentRow);
                     slope = GetCellValue("Calc", "N" + currentRow);
                     rise = GetCellValue("Calc", "R" + currentRow);
-                    vaults.Add(new Ceiling(name, type, area, length, slope, rise, heel, true));
+                    vaults.Add(new Ceiling(name, type, area, length, slope, rise, heel, true, this));
                 }
                 currentRow++;
             }
@@ -1031,11 +1035,11 @@ namespace HotPort
                 window.Remove();
             }
         }
-        public static string GetCellValue(string sheetName, string refCell)
+        public string GetCellValue(string sheetName, string refCell)
         {
             return ExcelHelper.GetCellValue(filePath, sheetName, refCell);
         }
-        private static double GetDoubleCellValue(string sheetName, string refCell)
+        private double GetDoubleCellValue(string sheetName, string refCell)
         {
             return ExcelHelper.GetDoubleCellValue(filePath, sheetName, refCell);
         }

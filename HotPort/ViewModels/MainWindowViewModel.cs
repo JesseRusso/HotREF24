@@ -1,7 +1,7 @@
 using HotPort.Infrastructure;
 using HotPort.Models;
-using CreatePropModel = HotPort.CreateProp;
-using CreateRefModel = HotPort.CreateRef;
+using CreatePropModel = HotPort.Models.CreateProp;
+using CreateRefModel = HotPort.Models.CreateRef;
 using HotPort.Properties;
 using System;
 using System.Collections.ObjectModel;
@@ -15,6 +15,18 @@ namespace HotPort.ViewModels
     internal class MainWindowViewModel : ObservableObject
     {
         private readonly IDialogService _dialogs;
+
+        // --- Child ViewModels ---
+        public EnerguidViewModel Energuid { get; }
+
+        // --- Commands ---
+        public ICommand WorksheetCommand { get; }
+        public ICommand SelectPropFileCommand { get; }
+        public ICommand TemplateCommand { get; }
+        public ICommand CreateRefCommand { get; }
+        public ICommand CreatePropCommand { get; }
+        public ICommand DefaultDirectoryCommand { get; }
+        public ICommand CodeLibDirectoryCommand { get; }
 
         // --- Zone profiles loaded from ReferenceProfiles.xml ---
         private readonly XElement[] _profiles;
@@ -89,17 +101,10 @@ namespace HotPort.ViewModels
             set => SetProperty(ref _directoryString, value);
         }
 
-        // --- Commands ---
-        public ICommand WorksheetCommand { get; }
-        public ICommand SelectPropFileCommand { get; }
-        public ICommand TemplateCommand { get; }
-        public ICommand CreateRefCommand { get; }
-        public ICommand CreatePropCommand { get; }
-        public ICommand DefaultDirectoryCommand { get; }
-
         public MainWindowViewModel(IDialogService dialogs)
         {
             _dialogs = dialogs;
+            Energuid = new EnerguidViewModel(dialogs);
 
             XDocument values = XDocument.Load(@".\ReferenceProfiles.xml");
             _profiles = values.Descendants("Zone").ToArray();
@@ -113,6 +118,7 @@ namespace HotPort.ViewModels
             CreateRefCommand = new RelayCommand(CreateRef);
             CreatePropCommand = new RelayCommand(CreateProp);
             DefaultDirectoryCommand = new RelayCommand(SelectDefaultDirectory);
+            CodeLibDirectoryCommand = new RelayCommand(SelectCodeLibDirectory);
         }
 
         private void SelectWorksheet()
@@ -123,6 +129,7 @@ namespace HotPort.ViewModels
                 string address = SplitAddress(path);
                 WorksheetLabel = address;
                 ProposedAddress = address;
+                Energuid.OnWorksheetLoaded(path);
             }
         }
 
@@ -218,7 +225,7 @@ namespace HotPort.ViewModels
 
             XDocument template = new XDocument(XDocument.Load(TemplatePath));
             var cp = new CreatePropModel(ExcelFilePath, template);
-            CreatePropModel.ChangeAddress(ProposedAddress);
+            cp.ChangeAddress(ProposedAddress);
 
             try { cp.CreateHouse(); }
             catch (Exception ex)
@@ -234,7 +241,7 @@ namespace HotPort.ViewModels
                 cp.ExtractWindows();
             }
 
-            XDocument newHouse = CreatePropModel.GetHouse();
+            XDocument newHouse = cp.GetHouse();
 
             if (_dialogs.TrySaveFile(
                     "Save Generated Proposed House",
@@ -256,6 +263,15 @@ namespace HotPort.ViewModels
             if (_dialogs.TryOpenFolder(out string path))
             {
                 Settings.Default.TemplateDir = path;
+                Settings.Default.Save();
+            }
+        }
+
+        private void SelectCodeLibDirectory()
+        {
+            if (_dialogs.TryOpenFolder(out string path))
+            {
+                Settings.Default.CodeLibDir = path;
                 Settings.Default.Save();
             }
         }
