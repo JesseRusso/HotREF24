@@ -405,17 +405,22 @@ namespace HotPort.Models
                 double height        = GetDoubleCellValue("Calc", $"G{row}");
                 double fhPerim       = GetDoubleCellValue("Calc", $"J{row}");
                 double fhHeight      = GetDoubleCellValue("Calc", $"K{row}");
+                string spacing       = GetCellValue("Calc", $"B{row}") ?? string.Empty;
                 string siding        = GetCellValue("Calc", $"D{row}") ?? string.Empty;
 
-                string typeText = siding.Equals("n/a", StringComparison.OrdinalIgnoreCase) ? "NoClad" : "User specified";
-                AddNewWall(name, corners, intersections, height, perimeter, typeText);
+                AddNewWall(name, corners, intersections, height, perimeter);
+
+                XElement? newWall = House.Descendants("Wall")
+                    .FirstOrDefault(w => w.Attribute("id")?.Value == (MaxID - 1).ToString());
+                XElement? wallTypeEl = newWall?.Element("Construction")?.Element("Type");
+                CodeEntry? wallCode = WallCodeFromSpecs(spacing, siding);
+                if (wallTypeEl != null && wallCode != null)
+                    ApplyCode(wallTypeEl, wallCode, includeNominalInsulation: true);
 
                 if (fhPerim > 0)
                 {
-                    XElement? newWall = House.Descendants("Wall")
-                        .FirstOrDefault(w => w.Attribute("id")?.Value == (MaxID - 1).ToString());
                     if (newWall?.Element("Components") == null)
-                        newWall?.Add(new XElement("Components"));
+                        newWall!.Add(new XElement("Components"));
                     newWall?.Element("Components")?.Add(
                         FloorHeader.NewJoist(fhHeight.ToString(), "0", fhPerim.ToString(), MaxID.ToString()));
                     MaxID++;
@@ -426,7 +431,12 @@ namespace HotPort.Models
             SetStoreys();
         }
 
-        private void AddNewWall(string name, string corners, string intersections, double height, double perim, string typeText = "User specified")
+        private CodeEntry? WallCodeFromSpecs(string spacing, string siding) =>
+            siding.Equals("n/a", StringComparison.OrdinalIgnoreCase) ? _noCladWallCode :
+            spacing.Contains("12")                                    ? _tallWallCode :
+            _mainWallCode;
+
+        private void AddNewWall(string name, string corners, string intersections, double height, double perim)
         {
             House.Descendants("Components").First().Add(
                 new XElement("Wall",
@@ -436,7 +446,7 @@ namespace HotPort.Models
                     new XElement("Construction",
                         new XAttribute("corners", corners),
                         new XAttribute("intersections", intersections),
-                        new XElement("Type", typeText,
+                        new XElement("Type", "User specified",
                             new XAttribute("rValue", "0"),
                             new XAttribute("nominalInsulation", "0"))),
                     new XElement("Measurements",
@@ -796,34 +806,10 @@ namespace HotPort.Models
 
         public void AssignCodes()
         {
-            AssignWallCodes();
             AssignFloorHeaderCodes();
             AssignCeilingCodes();
             AssignFloorCodes();
             BuildCodesSection();
-        }
-
-        private void AssignWallCodes()
-        {
-            foreach (XElement wall in House.Descendants("Components").Elements("Wall"))
-            {
-                string label = wall.Element("Label")?.Value ?? string.Empty;
-                XElement? typeEl = wall.Element("Construction")?.Element("Type");
-                if (typeEl == null) continue;
-
-                CodeEntry? code = SelectWallCode(label, typeEl.Value);
-                if (code != null)
-                    ApplyCode(typeEl, code, includeNominalInsulation: true);
-            }
-        }
-
-        private CodeEntry? SelectWallCode(string wallLabel, string currentTypeLabel)
-        {
-            if (wallLabel.Contains("Tall", StringComparison.OrdinalIgnoreCase))
-                return _tallWallCode;
-            if (currentTypeLabel.Contains("NoClad", StringComparison.OrdinalIgnoreCase))
-                return _noCladWallCode;
-            return _mainWallCode;
         }
 
         private void AssignFloorHeaderCodes()
