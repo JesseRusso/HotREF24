@@ -17,7 +17,7 @@ namespace HotPort.ViewModels
         private readonly IDialogService _dialogs;
 
         // --- Child ViewModels ---
-        public EnerguidViewModel Energuid { get; }
+        public EnerguideViewModel Energuide { get; }
 
         // --- Commands ---
         public ICommand WorksheetCommand { get; }
@@ -104,7 +104,7 @@ namespace HotPort.ViewModels
         public MainWindowViewModel(IDialogService dialogs)
         {
             _dialogs = dialogs;
-            Energuid = new EnerguidViewModel(dialogs);
+            Energuide = new EnerguideViewModel(dialogs);
 
             XDocument values = XDocument.Load(@".\ReferenceProfiles.xml");
             _profiles = values.Descendants("Zone").ToArray();
@@ -129,7 +129,7 @@ namespace HotPort.ViewModels
                 string address = SplitAddress(path);
                 WorksheetLabel = address;
                 ProposedAddress = address;
-                Energuid.OnWorksheetLoaded(path);
+                Energuide.OnWorksheetLoaded(path);
             }
         }
 

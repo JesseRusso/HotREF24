@@ -10,7 +10,7 @@ using System.Xml.Linq;
 
 namespace HotPort.ViewModels
 {
-    internal class EnerguidViewModel : ObservableObject
+    internal class EnerguideViewModel : ObservableObject
     {
         private readonly IDialogService _dialogs;
         private CodeLibrary? _codeLibrary;
@@ -116,7 +116,7 @@ namespace HotPort.ViewModels
         public ICommand SelectTemplateCommand { get; }
         public ICommand CreateEnerguidCommand { get; }
 
-        public EnerguidViewModel(IDialogService dialogs)
+        public EnerguideViewModel(IDialogService dialogs)
         {
             _dialogs = dialogs;
             SelectCodCommand = new RelayCommand(SelectCodManually);
@@ -189,29 +189,33 @@ namespace HotPort.ViewModels
                 !r.siding.Equals("n/a", System.StringComparison.OrdinalIgnoreCase) &&
                 !r.spacing.Contains("12"));
             if (mainRow != default)
-                SelectedMainWallCode = _codeLibrary!.InferWallCode(mainRow.spacing, mainRow.siding);
+                SelectedMainWallCode = Match(WallCodes, _codeLibrary!.InferWallCode(mainRow.spacing, mainRow.siding));
 
             // No-clad wall: first row where siding is "n/a"
             var noCladRow = wallRows.FirstOrDefault(r =>
                 r.siding.Equals("n/a", System.StringComparison.OrdinalIgnoreCase));
             if (noCladRow != default)
-                SelectedNoCladWallCode = _codeLibrary!.InferWallCode(noCladRow.spacing, "NoClad");
+                SelectedNoCladWallCode = Match(WallCodes, _codeLibrary!.InferWallCode(noCladRow.spacing, "NoClad"));
 
             // Tall wall: first row where spacing contains "12"
             var tallRow = wallRows.FirstOrDefault(r => r.spacing.Contains("12"));
             if (tallRow != default)
-                SelectedTallWallCode = _codeLibrary!.InferWallCode(tallRow.spacing, tallRow.siding);
+                SelectedTallWallCode = Match(WallCodes, _codeLibrary!.InferWallCode(tallRow.spacing, tallRow.siding));
 
             // Floor header: use main wall siding
             string mainSiding = mainRow != default ? mainRow.siding : string.Empty;
             if (!string.IsNullOrEmpty(mainSiding))
-                SelectedFloorHeaderCode = _codeLibrary!.InferFloorHeaderCode(mainSiding);
+                SelectedFloorHeaderCode = Match(FloorHeaderCodes, _codeLibrary!.InferFloorHeaderCode(mainSiding));
 
-            SelectedCeilingCode = _codeLibrary!.InferCeilingCode();
-            SelectedVaultCode = _codeLibrary!.InferVaultCode();
-            SelectedExposedFloorCode = _codeLibrary!.InferExposedFloorCode();
-            SelectedGarageFloorCode = _codeLibrary!.InferGarageFloorCode();
+            SelectedCeilingCode = Match(CeilingCodes, _codeLibrary!.InferCeilingCode());
+            SelectedVaultCode = Match(VaultCodes, _codeLibrary!.InferVaultCode());
+            SelectedExposedFloorCode = Match(ExposedFloorCodes, _codeLibrary!.InferExposedFloorCode());
+            SelectedGarageFloorCode = Match(GarageFloorCodes, _codeLibrary!.InferGarageFloorCode());
         }
+
+        // Finds the collection entry whose label matches the inferred entry
+        private static CodeEntry? Match(ObservableCollection<CodeEntry> collection, CodeEntry? inferred) =>
+            inferred == null ? null : collection.FirstOrDefault(e => e.Label == inferred.Label);
 
         private static void Populate(ObservableCollection<CodeEntry> collection, IReadOnlyList<CodeEntry> entries)
         {

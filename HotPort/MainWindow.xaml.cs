@@ -35,5 +35,6 @@ namespace HotPort
             Settings.Default.WindowTop = this.Top;
             Settings.Default.Save();
         }
+
     }
 }

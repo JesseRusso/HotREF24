@@ -107,11 +107,24 @@ namespace HotPort.Models
                 .ToList()
             ?? new List<CodeEntry>();
 
-        // Picks the shortest label that contains all provided terms (case-insensitive)
-        private static CodeEntry? BestMatch(IReadOnlyList<CodeEntry> codes, params string[] terms) =>
-            codes
-                .Where(e => terms.All(t => e.Label.Contains(t, System.StringComparison.OrdinalIgnoreCase)))
+        // Picks the shortest label that contains all provided terms (case-insensitive, whitespace-normalized)
+        private static CodeEntry? BestMatch(IReadOnlyList<CodeEntry> codes, params string[] terms)
+        {
+            // Normalize terms and label by removing spaces so "16 OC" matches "16OC"
+            string[] normalizedTerms = terms
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Replace(" ", string.Empty))
+                .ToArray();
+
+            return codes
+                .Where(e =>
+                {
+                    string normalizedLabel = e.Label.Replace(" ", string.Empty);
+                    return normalizedTerms.All(t =>
+                        normalizedLabel.Contains(t, System.StringComparison.OrdinalIgnoreCase));
+                })
                 .OrderBy(e => e.Label.Length)
                 .FirstOrDefault();
+        }
     }
 }
