@@ -259,6 +259,7 @@ namespace HotPort.ViewModels
 
             var energuide = new Energuide(
                 template,
+                _excelFilePath,
                 SelectedMainWallCode,
                 SelectedNoCladWallCode,
                 SelectedTallWallCode,
@@ -270,7 +271,9 @@ namespace HotPort.ViewModels
                 SelectedExposedFloorCode,
                 SelectedGarageFloorCode);
 
-            energuide.AssignCodes();
+            string address = MainWindowViewModel.SplitAddress(System.IO.Path.GetFileName(_excelFilePath));
+            energuide.ChangeAddress(address);
+            energuide.Generate();
 
             string defaultName = System.IO.Path.GetFileNameWithoutExtension(_templatePath) + "-ENERGUIDE";
             if (_dialogs.TrySaveFile(

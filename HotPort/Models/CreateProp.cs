@@ -551,7 +551,7 @@ namespace HotPort.Models
                     string dhwEF = GetCellValue("Summary", "K77");
                     bool isUEF = !GetCellValue("General", "P6").Equals("0");
                     string drawPattern = GetCellValue("General", "P6");
-                    WaterHeater tank = new WaterHeater(dhwMake, dhwModel, dhwEF, dhwSize, false, isPrimary, isUEF, drawPattern, this);
+                    WaterHeater tank = new WaterHeater(dhwMake, dhwModel, dhwEF, dhwSize, false, isPrimary, isUEF, drawPattern, newHouse);
                     tank.AddTank(basementPresent);
                 }
         }
@@ -571,7 +571,7 @@ namespace HotPort.Models
                 bool isUEF = false;
                 string drawPattern = "none";
 
-                WaterHeater tank = new WaterHeater(electricTankMake, electricTankModel, electricTankEF, electricTankVolume, true, isPrimary, isUEF, drawPattern, this);
+                WaterHeater tank = new WaterHeater(electricTankMake, electricTankModel, electricTankEF, electricTankVolume, true, isPrimary, isUEF, drawPattern, newHouse);
                 tank.AddTank(basementPresent);
             }
             }

@@ -1,5 +1,4 @@
 ﻿using DocumentFormat.OpenXml.Office2010.Drawing;
-using HotPort.Models;
 using System;
 using System.Linq;
 using System.Xml.Linq;
@@ -24,11 +23,11 @@ namespace HotPort
         private string usageBin;
         private bool primary = true;
         private bool UEF = false;
-        private CreateProp cp;
+        private XDocument house;
 
-        public WaterHeater(string manufacturer, string modelNumber, string EF, string impGal, bool electric, bool primary, bool isUEF, string drawPattern, CreateProp cp)
+        public WaterHeater(string manufacturer, string modelNumber, string EF, string impGal, bool electric, bool primary, bool isUEF, string drawPattern, XDocument house)
         {
-            this.cp = cp;
+            this.house = house;
             make = manufacturer;
             model = modelNumber;
             dhwEF = EF;
@@ -174,7 +173,7 @@ namespace HotPort
             {
                 tankOrder = "Secondary";
             }
-            XElement ? hw = (from el in cp.newHouse.Descendants("Components").Descendants("HotWater")
+            XElement? hw = (from el in house.Descendants("Components").Descendants("HotWater")
                            select el).FirstOrDefault();
             hw?.Add(
                 new XElement(tankOrder,
