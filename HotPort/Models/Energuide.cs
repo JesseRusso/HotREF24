@@ -74,8 +74,7 @@ namespace HotPort.Models
             ChangeSpecs();
             ChangeEquipment();
             CheckAC();
-            ChangeWalls();
-            ExtraWalls();
+            ProcessWalls();
             CheckCeilings();
             ExtraCeilings();
             CheckVaults();
@@ -388,135 +387,48 @@ namespace HotPort.Models
 
         // ── Walls ──────────────────────────────────────────────────────────────
 
-        private void ChangeWalls()
+        private void ProcessWalls()
         {
-            XElement first = House.Descendants("Wall")
-                .First(el => el.Element("Label").Value.Contains("1st"));
+            // Remove any placeholder wall the template may contain
+            House.Descendants("Components").Elements("Wall").ToList().ForEach(w => w.Remove());
 
-            string? rimRValue = first.Element("Components")?.Element("FloorHeader")
-                ?.Element("Construction")?.Element("Type")?.Attribute("rValue")?.Value;
-
-            first.Element("Measurements").SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "G21") * 0.3048, 3));
-            first.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H21") * 0.3048, 3));
-            first.Element("Construction").SetAttributeValue("corners",        GetCellValue("Calc", "E21"));
-            first.Element("Construction").SetAttributeValue("intersections",  GetCellValue("Calc", "F21"));
-            first.Element("Components").Element("FloorHeader").Element("Measurements")
-                 .SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "K21") * 0.3048, 3));
-            first.Element("Components").Element("FloorHeader").Element("Measurements")
-                 .SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "J21") * 0.3048, 3));
-
-            XElement second = House.Descendants("Wall")
-                .First(el => el.Element("Label").Value.Contains("2nd"));
-
-            string secondCheck = GetCellValue("Calc", "D4");
-            if (string.IsNullOrEmpty(secondCheck) || secondCheck == "0")
+            for (int row = 21; row <= 34; row++)
             {
-                second.Remove();
-                first.Descendants("FloorHeader").Remove();
-            }
-            else
-            {
-                second.Element("Measurements").SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "G24") * 0.3048, 3));
-                second.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H24") * 0.3048, 3));
-                second.Element("Construction").SetAttributeValue("corners",       GetCellValue("Calc", "E24"));
-                second.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F24"));
+                string name = GetCellValue("Calc", $"A{row}");
+                if (string.IsNullOrEmpty(name)) continue;
 
-                double secondRimPerim = GetDoubleCellValue("Calc", "J24");
-                if (secondRimPerim > 0)
+                double perimeter = GetDoubleCellValue("Calc", $"H{row}");
+                if (perimeter <= 0) continue;
+
+                string corners       = GetCellValue("Calc", $"E{row}");
+                string intersections = GetCellValue("Calc", $"F{row}");
+                double height        = GetDoubleCellValue("Calc", $"G{row}");
+                double fhPerim       = GetDoubleCellValue("Calc", $"J{row}");
+                double fhHeight      = GetDoubleCellValue("Calc", $"K{row}");
+                string siding        = GetCellValue("Calc", $"D{row}") ?? string.Empty;
+
+                string typeText = siding.Equals("n/a", StringComparison.OrdinalIgnoreCase) ? "NoClad" : "User specified";
+                AddNewWall(name, corners, intersections, height, perimeter, typeText);
+
+                if (fhPerim > 0)
                 {
-                    second.Element("Components")?.Add(FloorHeader.NewJoist(
-                        GetDoubleCellValue("Calc", "K24").ToString(),
-                        rimRValue ?? "0",
-                        secondRimPerim.ToString(),
-                        MaxID.ToString()));
+                    XElement? newWall = House.Descendants("Wall")
+                        .FirstOrDefault(w => w.Attribute("id")?.Value == (MaxID - 1).ToString());
+                    if (newWall?.Element("Components") == null)
+                        newWall?.Add(new XElement("Components"));
+                    newWall?.Element("Components")?.Add(
+                        FloorHeader.NewJoist(fhHeight.ToString(), "0", fhPerim.ToString(), MaxID.ToString()));
                     MaxID++;
                 }
             }
 
-            GarageWall();
-            TallWalls();
-            PlumbingWall();
             SetHouseType();
             SetStoreys();
         }
 
-        private void GarageWall()
-        {
-            XElement? garage = House.Descendants("Wall")
-                .FirstOrDefault(el => el.Element("Label").Value.ToLower().Contains("garage"));
-            if (garage == null) return;
-
-            string garageCheck = GetCellValue("Calc", "K3");
-            if (string.IsNullOrEmpty(garageCheck))
-            {
-                garage.Remove();
-            }
-            else
-            {
-                garage.Element("Measurements").SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "G30") * 0.3048, 3));
-                garage.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H30") * 0.3048, 3));
-                garage.Element("Construction").SetAttributeValue("corners",       GetCellValue("Calc", "E30"));
-                garage.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F30"));
-                garage.Element("Components").Element("FloorHeader")?.Element("Measurements")
-                      .SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "K38") * 0.3048, 3));
-                garage.Element("Components").Element("FloorHeader")?.Element("Measurements")
-                      .SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "J30") * 0.3048, 3));
-            }
-        }
-
-        private void TallWalls()
-        {
-            if (!int.TryParse(GetCellValue("Calc", "K4"), out int count))
-                throw new System.IO.IOException("Invalid data type found in !Calc K4. Must be a whole number 1-2.");
-
-            XElement tall = House.Descendants("Wall")
-                .First(x => x.Element("Label").Value.ToLower().Contains("tall"));
-
-            if (count <= 0)
-            {
-                tall.Remove();
-                return;
-            }
-
-            if (count == 2)
-            {
-                string twName   = GetCellValue("Calc", "A27");
-                string twCorners = GetCellValue("Calc", "E27");
-                string twInts   = GetCellValue("Calc", "F27");
-                double twHeight = GetDoubleCellValue("Calc", "G27");
-                double twPerim  = GetDoubleCellValue("Calc", "H27");
-                if (twPerim > 0)
-                    AddNewWall(twName, twCorners, twInts, twHeight, twPerim);
-            }
-
-            tall.Element("Measurements").SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "G31") * 0.3048, 3));
-            tall.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H31") * 0.3048, 3));
-            tall.Element("Construction").SetAttributeValue("corners",       GetCellValue("Calc", "E31"));
-            tall.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F31"));
-        }
-
-        private void PlumbingWall()
-        {
-            XElement? plumbing = House.Descendants("Wall")
-                .FirstOrDefault(el => el.Element("Label").Value.ToLower().Contains("plumbing"));
-
-            if (GetCellValue("Calc", "H34") == "0" && plumbing != null)
-            {
-                plumbing.Remove();
-            }
-            else if (plumbing != null)
-            {
-                plumbing.Element("Measurements").SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "G34") * 0.3048, 3));
-                plumbing.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H34") * 0.3048, 3));
-                plumbing.Element("Construction").SetAttributeValue("corners",       GetCellValue("Calc", "E34"));
-                plumbing.Element("Construction").SetAttributeValue("intersections", GetCellValue("Calc", "F34"));
-            }
-        }
-
         private void AddNewWall(string name, string corners, string intersections, double height, double perim, string typeText = "User specified")
         {
-            XElement comp = House.Descendants("Components").First();
-            comp.Add(
+            House.Descendants("Components").First().Add(
                 new XElement("Wall",
                     new XAttribute("adjacentEnclosedSpace", "false"),
                     new XAttribute("id", MaxID),
@@ -535,32 +447,6 @@ namespace HotPort.Models
                         new XElement("English", "N/A"),
                         new XElement("French", "S/O"))));
             MaxID++;
-        }
-
-        private void ExtraWalls()
-        {
-            int currentRow = 22;
-            for (int i = 22; i <= 33; i++)
-            {
-                string cellValue = GetCellValue("Calc", $"H{currentRow}");
-                if (double.TryParse(cellValue, out double perim) && perim > 0)
-                {
-                    double height      = GetDoubleCellValue("Calc", $"G{currentRow}");
-                    string name        = GetCellValue("Calc", $"A{currentRow}");
-                    string corners     = GetCellValue("Calc", $"E{currentRow}");
-                    string intersections = GetCellValue("Calc", $"F{currentRow}");
-                    string siding      = GetCellValue("Calc", $"D{currentRow}");
-
-                    string typeText = siding?.Equals("n/a", StringComparison.OrdinalIgnoreCase) == true
-                        ? "NoClad"
-                        : "User specified";
-
-                    AddNewWall(name, corners, intersections, height, perim, typeText);
-                }
-                currentRow++;
-                if (currentRow == 24 || currentRow == 27) { currentRow++; i++; }
-                if (currentRow == 30)                     { currentRow += 2; i += 2; }
-            }
         }
 
         // ── Ceilings ───────────────────────────────────────────────────────────
