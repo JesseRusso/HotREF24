@@ -69,6 +69,7 @@ namespace HotPort.Models
         {
             GetBuilder();
             FindID();
+            InitNextCodeId();
             CityCheck();
             ChangeCityWeather();
             ChangeSpecs();
@@ -112,6 +113,29 @@ namespace HotPort.Models
                           .Select(a => int.Parse(a.Value))
                           .ToList();
             MaxID = ids.Max() + 1;
+        }
+
+        private void InitNextCodeId()
+        {
+            // Sections we will rebuild — codes in these will be replaced, so their ids don't matter.
+            var rebuilt = new HashSet<string> { "Wall", "Ceiling", "CeilingFlat", "Floor", "FloorHeader" };
+
+            // Scan sections we keep (Window, Door, …) for the highest "Code N" id already in use.
+            int max = 0;
+            XElement? codesEl = House.Root?.Element("Codes");
+            if (codesEl != null)
+            {
+                foreach (XElement section in codesEl.Elements().Where(e => !rebuilt.Contains(e.Name.LocalName)))
+                {
+                    foreach (XAttribute attr in section.Descendants().Attributes("id"))
+                    {
+                        if (attr.Value.StartsWith("Code ") &&
+                            int.TryParse(attr.Value.AsSpan(5), out int n))
+                            max = Math.Max(max, n);
+                    }
+                }
+            }
+            _nextId = max + 1;
         }
 
         private string GetCellValue(string sheet, string cell) =>
