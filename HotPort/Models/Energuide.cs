@@ -24,10 +24,12 @@ namespace HotPort.Models
         private readonly CodeEntry? _flatCode;
         private readonly CodeEntry? _exposedFloorCode;
         private readonly CodeEntry? _garageFloorCode;
+        private readonly CodeEntry? _floorsAboveCode;
+        private readonly CodeEntry? _interiorWallCode;
 
         private readonly Dictionary<string, string> _assignedIds = new();
         private readonly List<CodeEntry> _usedCodes = new();
-        private int _nextId = 1;
+        private int _nextCodeId = 1;
 
         public Energuide(
             XDocument template,
@@ -41,7 +43,9 @@ namespace HotPort.Models
             CodeEntry? cathedralCode,
             CodeEntry? flatCode,
             CodeEntry? exposedFloorCode,
-            CodeEntry? garageFloorCode)
+            CodeEntry? garageFloorCode,
+            CodeEntry? floorsAboveCode,
+            CodeEntry? interiorWallCode)
         {
             House = new XDocument(template);
             _excelFilePath = excelFilePath;
@@ -55,6 +59,8 @@ namespace HotPort.Models
             _flatCode = flatCode;
             _exposedFloorCode = exposedFloorCode;
             _garageFloorCode = garageFloorCode;
+            _floorsAboveCode = floorsAboveCode;
+            _interiorWallCode = interiorWallCode;
         }
 
         // ── Entry points ───────────────────────────────────────────────────────
@@ -62,26 +68,30 @@ namespace HotPort.Models
         public void Generate()
         {
             BuildHouse();
-            AssignCodes();
+            BuildCodesSection();
         }
 
         public void BuildHouse()
         {
             GetBuilder();
-            FindID();
-            InitNextCodeId();
+            FindComponentID();
+            _nextCodeId = CodeTools.GetValidCodeID(House);
             CityCheck();
+            SetDate();
+            SetFileId();
             ChangeCityWeather();
             ChangeSpecs();
-            ChangeEquipment();
+            ChangeHRV();
+            ChangeFurnace();
             CheckAC();
             ProcessWalls();
-            CheckCeilings();
+            SetHouseType();
+            SetStoreys();
+            RemoveCeilings();
             ExtraCeilings();
             CheckVaults();
-            ChangeFloors();
-            ExtraFloors();
-            ChangeBasment();
+            CheckFloors();
+            CheckBasement();
             GasDHW();
             ElectricDHW();
         }
@@ -95,6 +105,8 @@ namespace HotPort.Models
                 if (!string.IsNullOrEmpty(postCode))
                     add.SetElementValue("PostalCode", postCode);
             }
+            XElement addressEl = House.Element("HouseFile").Element("ProgramInformation").Element("Client").Element("StreetAddress").Element("Street");
+            addressEl.SetValue(GetCellValue("Calc", "P5"));
         }
 
         // ── Infrastructure ─────────────────────────────────────────────────────
@@ -106,36 +118,13 @@ namespace HotPort.Models
                           .First().Value;
         }
 
-        private void FindID()
+        private void FindComponentID()
         {
             var ids = House.Descendants("House").Descendants().Attributes("id")
                           .Where(a => a.Value != null)
                           .Select(a => int.Parse(a.Value))
                           .ToList();
             MaxID = ids.Max() + 1;
-        }
-
-        private void InitNextCodeId()
-        {
-            // Sections we will rebuild — codes in these will be replaced, so their ids don't matter.
-            var rebuilt = new HashSet<string> { "Wall", "Ceiling", "CeilingFlat", "Floor", "FloorHeader" };
-
-            // Scan sections we keep (Window, Door, …) for the highest "Code N" id already in use.
-            int max = 0;
-            XElement? codesEl = House.Root?.Element("Codes");
-            if (codesEl != null)
-            {
-                foreach (XElement section in codesEl.Elements().Where(e => !rebuilt.Contains(e.Name.LocalName)))
-                {
-                    foreach (XAttribute attr in section.Descendants().Attributes("id"))
-                    {
-                        if (attr.Value.StartsWith("Code ") &&
-                            int.TryParse(attr.Value.AsSpan(5), out int n))
-                            max = Math.Max(max, n);
-                    }
-                }
-            }
-            _nextId = max + 1;
         }
 
         private string GetCellValue(string sheet, string cell) =>
@@ -152,6 +141,8 @@ namespace HotPort.Models
             if (string.IsNullOrEmpty(city))
                 throw new FormatException("!Calc P1 cannot be empty. Please select a city.");
 
+
+            //Changes the Terrain dropdown in the NAI screen to the Okotoks value
             if (city == "Okotoks")
                 House.Element("HouseFile").Element("House").Element("NaturalAirInfiltration")
                      .Element("Specifications").Element("BuildingSite").Element("Terrain")
@@ -178,7 +169,10 @@ namespace HotPort.Models
             House.Element("HouseFile").Element("ProgramInformation").Element("Weather")
                  .Element("Location").SetAttributeValue("code", locationCode);
         }
-
+        /*
+         * Changes the above/below ground heated floor area in the H2K specifications screen, 
+         * and the house volume and height of highest ceiling in the Natural Air Infiltration screen.
+         */
         private void ChangeSpecs()
         {
             double aboveGrade = GetDoubleCellValue("Calc", "E6");
@@ -220,14 +214,20 @@ namespace HotPort.Models
                 ps.Element("English")?.SetValue(eng);
                 ps.Element("French")?.SetValue(fr);
             }
-
-            SetDate();
         }
 
         private void SetDate()
         {
             XElement evalDate = House.Element("HouseFile").Element("ProgramInformation").Element("File");
             evalDate.SetAttributeValue("evaluationDate", DateTime.UtcNow.Date.ToString("yyyy-MM-dd"));
+        }
+
+        private void SetFileId()
+        {
+            string fileId = GetCellValue("Calc", "P3");
+            XElement idField = House.Element("HouseFile").Element("ProgramInformation").Element("File").Element("Identification");
+            if (fileId != null)
+                idField.SetValue(fileId);
         }
 
         private void SetStoreys()
@@ -304,12 +304,6 @@ namespace HotPort.Models
 
         // ── Equipment ──────────────────────────────────────────────────────────
 
-        private void ChangeEquipment()
-        {
-            ChangeHRV();
-            ChangeFurnace();
-        }
-
         private void ChangeHRV()
         {
             string hrvMake   = GetCellValue("Summary", "D74");
@@ -321,7 +315,8 @@ namespace HotPort.Models
 
             if (int.TryParse(GetCellValue("General", "K2"), out int count) && count > 0)
                 hrvModel += " & " + GetCellValue("Summary", "E92");
-
+            if (int.TryParse(GetCellValue("General", "K1"), out int qty) && qty > 1)
+                hrvModel = $"{qty}X {hrvModel}";
             double hrvFlowrate = Math.Round(GetDoubleCellValue("General", "H4"), 1);
             string fanPower    = Math.Round(GetDoubleCellValue("General", "K4"), 1).ToString();
 
@@ -367,8 +362,12 @@ namespace HotPort.Models
             }
             foreach (XElement fan in House.Descendants("HeatingCooling"))
             {
-                fan.Element("Type1").Element("FansAndPump").Element("Power").SetAttributeValue("low", GetCellValue("General", "E4"));
-                fan.Element("Type1").Element("FansAndPump").Element("Power").SetAttributeValue("high", GetCellValue("General", "D4"));
+                fan.Element("Type1").Element("FansAndPump").SetAttributeValue("hasEnergyEfficientMotor", "true");
+                fan.Element("Type1").Element("FansAndPump").Element("Power").SetAttributeValue("isCalculated", "true");
+                fan.Element("Type1").Element("FansAndPump").Element("Power").SetAttributeValue("low", "0");
+                fan.Element("Type1").Element("FansAndPump").Element("Power").SetAttributeValue("high", "300");
+
+                fan.Element("Type1").Element("FansAndPump").Element("Mode").SetAttributeValue("code", "1");
             }
         }
 
@@ -427,12 +426,13 @@ namespace HotPort.Models
                 string corners       = GetCellValue("Calc", $"E{row}");
                 string intersections = GetCellValue("Calc", $"F{row}");
                 double height        = GetDoubleCellValue("Calc", $"G{row}");
-                double fhPerim       = GetDoubleCellValue("Calc", $"J{row}");
-                double fhHeight      = GetDoubleCellValue("Calc", $"K{row}");
+                string fhPerim       = GetCellValue("Calc", $"J{row}");
+                string fhHeight      = GetCellValue("Calc", $"K{row}");
                 string spacing       = GetCellValue("Calc", $"B{row}") ?? string.Empty;
                 string siding        = GetCellValue("Calc", $"D{row}") ?? string.Empty;
+                bool uncon           = GetCellValue("Calc", $"I{row}").ToLower() == "y";
 
-                AddNewWall(name, corners, intersections, height, perimeter);
+                AddNewWall(name, corners, intersections, height, perimeter, uncon);
 
                 XElement? newWall = House.Descendants("Wall")
                     .FirstOrDefault(w => w.Attribute("id")?.Value == (MaxID - 1).ToString());
@@ -441,36 +441,40 @@ namespace HotPort.Models
                 if (wallTypeEl != null && wallCode != null)
                     ApplyCode(wallTypeEl, wallCode, includeNominalInsulation: true);
 
-                if (fhPerim > 0)
+                if (Double.TryParse(fhPerim, out double headerPerim) && headerPerim > 0 && Double.TryParse(fhHeight, out double headerHeight) && headerHeight > 0)
                 {
                     if (newWall?.Element("Components") == null)
                         newWall!.Add(new XElement("Components"));
                     newWall?.Element("Components")?.Add(
                         FloorHeader.NewJoist(fhHeight.ToString(), "0", fhPerim.ToString(), MaxID.ToString()));
                     MaxID++;
+
+                    if (_floorHeaderCode != null)
+                    {
+                        XElement? fhTypeEl = newWall?.Element("Components")?.Element("FloorHeader")
+                            ?.Element("Construction")?.Element("Type");
+                        if (fhTypeEl != null)
+                            ApplyCode(fhTypeEl, _floorHeaderCode, includeNominalInsulation: true);
+                    }
                 }
             }
-
-            SetHouseType();
-            SetStoreys();
         }
 
         private CodeEntry? WallCodeFromSpecs(string spacing, string siding) =>
-            siding.Equals("n/a", StringComparison.OrdinalIgnoreCase) ? _noCladWallCode :
-            spacing.Contains("12")                                    ? _tallWallCode :
-            _mainWallCode;
+            siding.ToLower().Contains("n/a") ? _noCladWallCode :
+            spacing.Contains("12") ? _tallWallCode :_mainWallCode;
 
-        private void AddNewWall(string name, string corners, string intersections, double height, double perim)
+        private void AddNewWall(string name, string corners, string intersections, double height, double perim, bool adjacentUnconditioned)
         {
             House.Descendants("Components").First().Add(
                 new XElement("Wall",
-                    new XAttribute("adjacentEnclosedSpace", "false"),
+                    new XAttribute("adjacentEnclosedSpace", adjacentUnconditioned.ToString().ToLower()),
                     new XAttribute("id", MaxID),
                     new XElement("Label", name),
                     new XElement("Construction",
                         new XAttribute("corners", corners),
                         new XAttribute("intersections", intersections),
-                        new XElement("Type", "User specified",
+                        new XElement("Type", "",
                             new XAttribute("rValue", "0"),
                             new XAttribute("nominalInsulation", "0"))),
                     new XElement("Measurements",
@@ -485,16 +489,10 @@ namespace HotPort.Models
 
         // ── Ceilings ───────────────────────────────────────────────────────────
 
-        private void CheckCeilings()
+        private void RemoveCeilings()
         {
             // Remove all template ceiling placeholders; actual ceilings are added by ExtraCeilings/CheckVaults
             House.Descendants("Ceiling")
-                 .Where(c => c.Element("Label")?.Value.Contains("2nd") == true)
-                 .ToList().ForEach(c => c.Remove());
-
-            House.Descendants("Components").Descendants("Ceiling")
-                 .Where(c => new[] { "4", "5", "6" }.Contains(
-                     c.Element("Construction")?.Element("Type")?.Attribute("code")?.Value))
                  .ToList().ForEach(c => c.Remove());
         }
 
@@ -557,8 +555,7 @@ namespace HotPort.Models
                              : isVault ? string.Empty
                              : $"{slope}/12";
 
-            XElement comp = House.Descendants("Components").First();
-            comp.Add(
+            XElement ceiling =
                 new XElement("Ceiling",
                     new XAttribute("id", MaxID),
                     new XElement("Label", $"{name} {slopeName}".TrimEnd()),
@@ -578,8 +575,21 @@ namespace HotPort.Models
                             new XAttribute("code",  slopeCode),
                             new XAttribute("value", slopeValue),
                             new XElement("English", slopeEng),
-                            new XElement("French",  slopeFr)))));
+                            new XElement("French",  slopeFr))));
+
+            House.Descendants("Components").First().Add(ceiling);
             MaxID++;
+
+            CodeEntry? code = typeCode switch
+            {
+                "2" or "3" => _ceilingCode,
+                "6"        => _vaultCode,
+                "4"        => _cathedralCode,
+                "5"        => _flatCode,
+                _          => null
+            };
+            if (code != null)
+                ApplyCode(ceiling.Element("Construction").Element("CeilingType"), code, includeNominalInsulation: true);
         }
 
         private static (string code, string value, string eng, string fr) ResolveSlope(string slope, bool isFlat)
@@ -604,38 +614,16 @@ namespace HotPort.Models
 
         // ── Floors ─────────────────────────────────────────────────────────────
 
-        private void ChangeFloors()
+        private void CheckFloors()
         {
-            double garFlrArea = GetDoubleCellValue("Calc", "P21");
-            bool garPresent   = garFlrArea > 0;
 
-            XElement? garFlr = House.Descendants("Floor")
-                .FirstOrDefault(el => el.Element("Label").Value.ToLower().Contains("garage"));
+            IEnumerable<XElement> flrs = House.Descendants("Components").Elements("Floor");
 
-            XElement? floor = House.Descendants("Floor")
-                .FirstOrDefault(el => el.Element("Label").Value.ToLower().Contains("cant"));
-
-            floor?.Remove();
-
-            if (garFlr != null)
+            foreach (XElement flr in flrs)
             {
-                if (garPresent)
-                {
-                    double garFlrLength = GetDoubleCellValue("Calc", "O21");
-                    garFlr.Element("Measurements")?.SetAttributeValue("area",   Math.Round(garFlrArea   * 0.092903, 4));
-                    garFlr.Element("Measurements")?.SetAttributeValue("length", Math.Round(garFlrLength * 0.3048,   4));
-                    garFlr.Element("Label")?.SetValue(GetCellValue("Calc", "L21"));
-                }
-                else
-                {
-                    garFlr.Remove();
-                }
+                flr.Remove();
             }
-        }
-
-        private void ExtraFloors()
-        {
-            for (int row = 22; row <= 34; row++)
+            for (int row = 21; row <= 30; row++)
             {
                 string cellValue = GetCellValue("Calc", $"P{row}");
                 if (string.IsNullOrEmpty(cellValue) || !double.TryParse(cellValue, out double area) || area <= 0)
@@ -643,26 +631,33 @@ namespace HotPort.Models
 
                 double length = GetDoubleCellValue("Calc", $"O{row}");
                 string name   = GetCellValue("Calc", $"L{row}");
-                NewFloor(name, length, area);
+                bool gar = GetCellValue("Calc", $"Q{row}").ToLower() == "y";
+                NewFloor(name, length, area, gar);
             }
         }
 
-        private void NewFloor(string name, double length, double area)
+        private void NewFloor(string name, double length, double area, bool gar)
         {
-            XElement comp = House.Descendants("Components").First();
-            comp.Add(
+            XElement floor =
                 new XElement("Floor",
-                    new XAttribute("adjacentEnclosedSpace", "false"),
+                    new XAttribute("adjacentEnclosedSpace", gar ? "true" : "false"),
                     new XAttribute("id", MaxID),
                     new XElement("Label", name),
                     new XElement("Construction",
                         new XElement("Type", "User specified",
+                            new XAttribute("idref", ""),
                             new XAttribute("rValue", "0"),
                             new XAttribute("nominalInsulation", "0"))),
                     new XElement("Measurements",
                         new XAttribute("area",   Math.Round(area   * 0.092903, 4).ToString()),
-                        new XAttribute("length", Math.Round(length * 0.3048,   4).ToString()))));
+                        new XAttribute("length", Math.Round(length * 0.3048,   4).ToString())));
+
+            House.Descendants("Components").First().Add(floor);
             MaxID++;
+
+            CodeEntry? code = gar ? _garageFloorCode : _exposedFloorCode;
+            if (code != null)
+                ApplyCode(floor.Element("Construction").Element("Type"), code, includeNominalInsulation: true);
         }
 
         // ── Basement ───────────────────────────────────────────────────────────
@@ -670,32 +665,37 @@ namespace HotPort.Models
         private void ChangeBasment()
         {
             bool basement       = GetCellValue("Calc", "N2")?.ToLower() == "y";
-            bool bsmtUnder4Feet = GetCellValue("Calc", "N4")?.ToLower() == "y";
             bool slabOnGrade    = GetCellValue("Calc", "N5")?.ToLower() == "y";
 
-            if (!basement && !bsmtUnder4Feet)
+            if (!basement)
                 _basementPresent = false;
 
             if (basement)
             {
-                XElement over4 = House.Descendants("Components").Descendants("Basement")
-                    .First(el => el.Element("Label").Value.Contains(">"));
+                XElement bsmt = House.Descendants("Components").Descendants("Basement").First();
 
-                over4.SetAttributeValue("exposedSurfacePerimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "E38")) * 0.3048, 4));
-                over4.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "D38") * 0.3048, 4));
-                over4.Element("Floor").Element("Measurements").SetAttributeValue("area",      Math.Round(GetDoubleCellValue("Calc", "F38") * 0.092903, 4));
-                over4.Element("Wall").Element("Measurements").SetAttributeValue("height",     Math.Round(GetDoubleCellValue("Calc", "G38") * 0.3048, 4));
-                over4.Element("Wall").Element("Measurements").SetAttributeValue("depth",      Math.Round(GetDoubleCellValue("Calc", "H38") * 0.3048, 4));
-                over4.Element("Wall").Element("Construction").SetAttributeValue("corners",    GetCellValue("Calc", "J38"));
-                over4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "K38") * 0.3048, 4));
-                over4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "L38") * 0.3048, 4));
+                bsmt.SetAttributeValue("exposedSurfacePerimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "E38")) * 0.3048, 4));
+                bsmt.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "D38") * 0.3048, 4));
+                bsmt.Element("Floor").Element("Measurements").SetAttributeValue("area",      Math.Round(GetDoubleCellValue("Calc", "F38") * 0.092903, 4));
+                bsmt.Element("Floor").Element("Measurements").SetAttributeValue("isRectangular", "false");
+
+                bsmt.Element("Configuration").SetAttributeValue("type", "BCCB");
+                bsmt.Element("Configuration").SetAttributeValue("subtype", "4");
+                bsmt.Element("Configuration").SetAttributeValue("overlap", "0");
+
+                bsmt.Element("Wall").Element("Measurements").SetAttributeValue("height",     Math.Round(GetDoubleCellValue("Calc", "G38") * 0.3048, 4));
+                bsmt.Element("Wall").Element("Measurements").SetAttributeValue("depth",      Math.Round(GetDoubleCellValue("Calc", "H38") * 0.3048, 4));
+                bsmt.Element("Wall").Element("Construction").SetAttributeValue("corners",    GetCellValue("Calc", "J38"));
+
+                bsmt.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "K38") * 0.3048, 4));
+                bsmt.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "L38") * 0.3048, 4));
 
                 string pony = GetCellValue("Calc", "I38");
                 if (double.TryParse(pony, out double ponyHeight) && ponyHeight > 0D)
                 {
-                    over4.Element("Wall").SetAttributeValue("hasPonyWall", "true");
-                    over4.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", Math.Round(ponyHeight * 0.3048, 4));
-                    over4.Element("Wall").Element("Construction").Add(
+                    bsmt.Element("Wall").SetAttributeValue("hasPonyWall", "true");
+                    bsmt.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", Math.Round(ponyHeight * 0.3048, 4));
+                    bsmt.Element("Wall").Element("Construction").Add(
                         new XElement("PonyWallType",
                             new XAttribute("nominalInsulation", "3.2536"),
                             new XElement("Description", "User specified"),
@@ -708,63 +708,100 @@ namespace HotPort.Models
                 }
                 else
                 {
-                    over4.Element("Wall").SetAttributeValue("hasPonyWall", "false");
-                    over4.Element("Wall").Element("Construction").Element("PonyWallType")?.Remove();
-                    over4.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", "0");
+                    bsmt.Element("Wall").SetAttributeValue("hasPonyWall", "false");
+                    bsmt.Element("Wall").Element("Construction").Element("PonyWallType")?.Remove();
+                    bsmt.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", "0");
                 }
-
-                Under4Bsmt(bsmtUnder4Feet);
                 SlabOnGrade(slabOnGrade);
                 return;
             }
-
             House.Descendants("Components").Descendants("Basement")
                  .FirstOrDefault(x => x.Element("Label").Value.Contains(">"))
                  ?.Remove();
 
-            Under4Bsmt(bsmtUnder4Feet);
             SlabOnGrade(slabOnGrade);
         }
 
-        private void Under4Bsmt(bool under4Present)
+        public void CheckBasement()
         {
-            XElement? under4 = House.Descendants("Components").Descendants("Basement")
-                .FirstOrDefault(el => el.Element("Label").Value.Contains("<"));
+            bool basement = GetCellValue("Calc", "N2")?.ToLower() == "y";
+            bool slabOnGrade = GetCellValue("Calc", "N5")?.ToLower() == "y";
 
-            if (under4 == null) return;
-
-            if (under4Present)
+            XElement? existingBsmt = House.Descendants("Components").Descendants("Basement").FirstOrDefault();
+            if (existingBsmt != null)
             {
-                under4.SetAttributeValue("exposedSurfacePerimeter", Math.Round(GetDoubleCellValue("Calc", "E39") * 0.3048, 4));
-                under4.Element("Floor").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "D39") * 0.3048, 4));
-                under4.Element("Floor").Element("Measurements").SetAttributeValue("area",      Math.Round(GetDoubleCellValue("Calc", "F39") * 0.092903, 4));
-                under4.Element("Wall").Element("Measurements").SetAttributeValue("height",     Math.Round(GetDoubleCellValue("Calc", "G39") * 0.3048, 4));
-                under4.Element("Wall").Element("Measurements").SetAttributeValue("depth",      Math.Round(GetDoubleCellValue("Calc", "H39") * 0.3048, 4));
-                under4.Element("Wall").Element("Construction").SetAttributeValue("corners",    GetCellValue("Calc", "J39"));
-                under4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("height",    Math.Round(GetDoubleCellValue("Calc", "K39") * 0.3048, 4));
-                under4.Element("Components").Element("FloorHeader").Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "L39") * 0.3048, 4));
+                existingBsmt.Remove();
+            }
 
-                string pony = GetCellValue("Calc", "I39");
-                if (double.TryParse(pony, out double ponyHeight) && ponyHeight > 0D)
+            if (basement)
+            {
+                _basementPresent = true;
+
+                double pony = GetDoubleCellValue("Calc", "I38");
+                string corners = GetCellValue("Calc", "J38");
+                double expPerim = Math.Round(Convert.ToDouble(GetCellValue("Calc", "E38")) * 0.3048, 4);
+                double floorPerim = Math.Round(GetDoubleCellValue("Calc", "D38") * 0.3048, 4);
+                double floorArea = Math.Round(GetDoubleCellValue("Calc", "F38") * 0.092903, 4);
+                double wallHeight = Math.Round(GetDoubleCellValue("Calc", "G38") * 0.3048, 4);
+                double depthBelow = Math.Round(GetDoubleCellValue("Calc", "H38") * 0.3048, 4);
+                
+                double headerHeight = Math.Round(GetDoubleCellValue("Calc", "K38") * 0.3048, 4);
+                double headerPerim = Math.Round(GetDoubleCellValue("Calc", "L38") * 0.3048, 4);
+
+                Foundation fnd = new Foundation
                 {
-                    under4.Element("Wall").SetAttributeValue("hasPonyWall", "true");
-                    under4.Element("Wall").Element("Measurements").SetAttributeValue("ponyWallHeight", Math.Round(ponyHeight * 0.3048, 4));
-                    under4.Element("Wall").Element("Construction").Add(
-                        new XElement("PonyWallType",
-                            new XAttribute("nominalInsulation", "3.2536"),
-                            new XElement("Description", "User specified"),
-                            new XElement("Composite",
-                                new XElement("Section",
-                                    new XAttribute("rank", "1"),
-                                    new XAttribute("percentage", "100"),
-                                    new XAttribute("rsi", "2.6029"),
-                                    new XAttribute("nominalRsi", "3.2536")))));
+                    Id = MaxID,
+                    Label = "Basement",
+                    ExposedSurfacePerimeter = expPerim,
+                    FloorPerimeter = floorPerim,
+                    FloorArea = floorArea,
+                    WallCorners = corners,
+                    WallHeight = wallHeight,
+                    WallDepth = depthBelow,
+                    PonyWallHeight = pony,
+                };
+                MaxID++;
+                XElement bsmt = fnd.AddBasement();
+
+                // Floors above: a leaf <FloorsAbove> element, coded like any other Type
+                XElement? floorsAbove = bsmt.Element("Floor")?.Element("Construction")?.Element("FloorsAbove");
+                if (floorsAbove != null && _floorsAboveCode != null)
+                    ApplyCode(floorsAbove, _floorsAboveCode, includeNominalInsulation: true);
+                if (_floorsAboveCode.NominalRValue <= 0)
+                    floorsAbove.SetAttributeValue("rValue", "0.4");
+
+                // Interior wall insulation has its own structure (Description + Composite), so set it directly
+                XElement? interior = bsmt.Element("Wall")?.Element("Construction")?.Element("InteriorAddedInsulation");
+                if (interior != null && _interiorWallCode != null)
+                {
+                    string rValue = _interiorWallCode.NominalRValue.ToString();
+                    interior.SetAttributeValue("idref", GetOrAssignId(_interiorWallCode));
+                    interior.SetAttributeValue("nominalInsulation", rValue);
+                    interior.Element("Description")?.SetValue(_interiorWallCode.Label);
+                    interior.Element("Composite")?.Element("Section")?.SetAttributeValue("nominalRsi", rValue);
                 }
+
+                if(pony > 0D)
+                {
+                    fnd.AddPonyWall(bsmt);
+                }
+                if(headerPerim > 0D)
+                {
+                    bsmt.Add(new XElement("Components"));
+                    bsmt.Element("Components").Add(
+                        FloorHeader.NewErsJoist(headerHeight.ToString(), headerPerim.ToString(), MaxID.ToString()));
+                    MaxID++;
+
+                    if (_floorHeaderCode != null)
+                        ApplyCode(bsmt.Element("Components").Element("FloorHeader").Element("Construction").Element("Type"),
+                            _floorHeaderCode, includeNominalInsulation: true);
+                }
+                House.Descendants("Components").First().Add(bsmt);
             }
-            else
-            {
-                under4.Remove();
-            }
+            //else
+            //{
+            //    SlabOnGrade(slabOnGrade);
+            //}
         }
 
         private void SlabOnGrade(bool isSlabPresent)
@@ -782,7 +819,7 @@ namespace HotPort.Models
             }
             else
             {
-                slab.Remove();
+                slab?.Remove();
             }
         }
 
@@ -827,65 +864,9 @@ namespace HotPort.Models
         }
 
         // ── Code assignment ────────────────────────────────────────────────────
-
-        public void AssignCodes()
-        {
-            AssignFloorHeaderCodes();
-            AssignCeilingCodes();
-            AssignFloorCodes();
-            BuildCodesSection();
-        }
-
-        private void AssignFloorHeaderCodes()
-        {
-            foreach (XElement fh in House.Descendants("FloorHeader"))
-            {
-                XElement? typeEl = fh.Element("Construction")?.Element("Type");
-                if (typeEl != null && _floorHeaderCode != null)
-                    ApplyCode(typeEl, _floorHeaderCode, includeNominalInsulation: true);
-            }
-        }
-
-        private void AssignCeilingCodes()
-        {
-            foreach (XElement ceiling in House.Descendants("Ceiling"))
-            {
-                string typeCode = ceiling.Element("Construction")
-                    ?.Element("Type")?.Attribute("code")?.Value ?? string.Empty;
-
-                XElement? ceilingTypeEl = ceiling.Element("Construction")?.Element("CeilingType");
-                if (ceilingTypeEl == null) continue;
-
-                CodeEntry? code = typeCode switch
-                {
-                    "2" or "3" => _ceilingCode,
-                    "6"        => _vaultCode,
-                    "4"        => _cathedralCode,
-                    "5"        => _flatCode,
-                    _          => null
-                };
-
-                if (code != null)
-                    ApplyCode(ceilingTypeEl, code, includeNominalInsulation: true);
-            }
-        }
-
-        private void AssignFloorCodes()
-        {
-            foreach (XElement floor in House.Descendants("Components").Elements("Floor"))
-            {
-                string label = floor.Element("Label")?.Value ?? string.Empty;
-                XElement? typeEl = floor.Element("Construction")?.Element("Type");
-                if (typeEl == null) continue;
-
-                CodeEntry? code = label.Contains("Gar", StringComparison.OrdinalIgnoreCase)
-                    ? _garageFloorCode
-                    : _exposedFloorCode;
-
-                if (code != null)
-                    ApplyCode(typeEl, code, includeNominalInsulation: true);
-            }
-        }
+        // Codes are applied to each component as it is created (see ProcessWalls,
+        // AddCeiling, NewFloor, CheckBasement). BuildCodesSection() then collects the
+        // used codes into the house file's <Codes> block.
 
         private void ApplyCode(XElement typeEl, CodeEntry code, bool includeNominalInsulation)
         {
@@ -903,7 +884,7 @@ namespace HotPort.Models
         {
             if (!_assignedIds.TryGetValue(code.Label, out string? id))
             {
-                id = $"Code {_nextId++}";
+                id = $"Code {_nextCodeId++}";
                 _assignedIds[code.Label] = id;
                 _usedCodes.Add(code);
             }
@@ -919,20 +900,27 @@ namespace HotPort.Models
                 House.Root?.Add(codesEl);
             }
 
-            var sectionsToRebuild = new HashSet<string> { "Wall", "Ceiling", "CeilingFlat", "Floor", "FloorHeader" };
+            var sectionsToRebuild = new HashSet<string> { "Wall", "Ceiling", "CeilingFlat", "Floor", "FloorHeader", "FloorsAbove", "BasementWall" };
             foreach (string section in sectionsToRebuild)
                 codesEl.Element(section)?.Remove();
 
-            foreach (var group in _usedCodes.GroupBy(c => c.CodSection))
+            foreach (var sectionGroup in _usedCodes.GroupBy(c => c.CodSection))
             {
-                XElement sectionEl = new XElement(group.Key,
-                    new XElement("UserDefined",
-                        group.Select(code =>
+                XElement sectionEl = new XElement(sectionGroup.Key);
+
+                // Emit each code under the wrapper it came from (UserDefined vs Favorite):
+                // their schema types differ, so mixing them up produces an invalid file.
+                foreach (var wrapperGroup in sectionGroup.GroupBy(c => c.Wrapper))
+                {
+                    sectionEl.Add(new XElement(wrapperGroup.Key,
+                        wrapperGroup.Select(code =>
                         {
                             XElement codeEl = new XElement(code.Element);
                             codeEl.SetAttributeValue("id", _assignedIds[code.Label]);
                             return codeEl;
                         })));
+                }
+
                 codesEl.Add(sectionEl);
             }
         }

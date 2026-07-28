@@ -84,7 +84,6 @@ namespace HotPort.Models
             }
             List<int> idList = ids.Select(s => int.Parse(s)).ToList();
             maxID = idList.Max() + 1;
-            ids.Clear();
         }
         //Gets the builder name from the house file
         private void GetBuilder()
@@ -846,17 +845,23 @@ namespace HotPort.Models
                     slope = GetCellValue("Calc", "F" + currentRow);
                     heel = GetDoubleCellValue("Calc", "H" + currentRow);
 
-                    Object[] args = { name, type, area, length, slope, heel };
-
-                    ceilings.Add(new Ceiling(name, type, area, length, slope, heel, this));
-                    //ceilingCount = ceilings.Count();
+                    Object[] args = { name, type, area, length, slope, heel, maxID };
+                    Dictionary<string, string> rValues = new Dictionary<string, string>
+                    {
+                        {"ceiling", ceilingRValue },
+                        {"vault", vaultRValue },
+                        {"cathedral", cathedralRValue },
+                        {"flat", flatCeilingRValue }
+                    };
+                    Ceiling newCeiling = new Ceiling(args, rValues, builder);
+                    ceilings.Add(newCeiling);
+                    maxID++;
                 }
                 currentRow++;
             }
-            //ceilingCount = ceilings.Count();
             foreach (Ceiling c in ceilings)
             {
-                c.AddCeiling();
+                c.AddCodeCeiling(newHouse);
             }
         }
         //Checks spreadsheet for vaults and calls AddCeiling() to add them
@@ -887,13 +892,22 @@ namespace HotPort.Models
                     type = GetCellValue("Calc", "AD" + currentRow);
                     slope = GetCellValue("Calc", "N" + currentRow);
                     rise = GetCellValue("Calc", "R" + currentRow);
-                    vaults.Add(new Ceiling(name, type, area, length, slope, rise, heel, true, this));
+                    object[] args = { name, type, area, length,  slope, heel, rise, maxID };
+                    Dictionary<string, string> rValues = new Dictionary<string, string>
+                    {
+                        {"ceiling", ceilingRValue },
+                        {"vault", vaultRValue },
+                        {"cathedral", cathedralRValue },
+                        {"flat", flatCeilingRValue }
+                    };
+                    vaults.Add(new Ceiling(args, rValues, builder, true));
+                    maxID++;
                 }
                 currentRow++;
             }
             foreach (Ceiling v in vaults)
             {
-                v.AddCeiling();
+                v.AddCodeCeiling(newHouse);
             }
         }
 

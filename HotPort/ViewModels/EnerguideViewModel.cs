@@ -96,6 +96,25 @@ namespace HotPort.ViewModels
             set => SetProperty(ref _selectedGarageFloorCode, value);
         }
 
+        // --- Foundation ---
+        public ObservableCollection<CodeEntry> FloorsAboveCodes { get; } = new();
+
+        private CodeEntry? _selectedFloorsAboveCode;
+        public CodeEntry? SelectedFloorsAboveCode
+        {
+            get => _selectedFloorsAboveCode;
+            set => SetProperty(ref _selectedFloorsAboveCode, value);
+        }
+
+        public ObservableCollection<CodeEntry> InteriorWallCodes { get; } = new();
+
+        private CodeEntry? _selectedInteriorWallCode;
+        public CodeEntry? SelectedInteriorWallCode
+        {
+            get => _selectedInteriorWallCode;
+            set => SetProperty(ref _selectedInteriorWallCode, value);
+        }
+
         // --- Template ---
         private string? _templatePath;
         public string? TemplatePath
@@ -114,14 +133,14 @@ namespace HotPort.ViewModels
         // --- Commands ---
         public ICommand SelectCodCommand { get; }
         public ICommand SelectTemplateCommand { get; }
-        public ICommand CreateEnerguidCommand { get; }
+        public ICommand CreateEnerguideCommand { get; }
 
         public EnerguideViewModel(IDialogService dialogs)
         {
             _dialogs = dialogs;
             SelectCodCommand = new RelayCommand(SelectCodManually);
             SelectTemplateCommand = new RelayCommand(SelectTemplate);
-            CreateEnerguidCommand = new RelayCommand(CreateEnerguid);
+            CreateEnerguideCommand = new RelayCommand(CreateEnerguide);
         }
 
         // Called by MainWindowViewModel whenever the worksheet path changes
@@ -166,6 +185,8 @@ namespace HotPort.ViewModels
             Populate(VaultCodes, _codeLibrary.GetVaultCodes());
             Populate(ExposedFloorCodes, _codeLibrary.ExposedFloorCodes());
             Populate(GarageFloorCodes, _codeLibrary.GarageFloorCodes());
+            Populate(FloorsAboveCodes, _codeLibrary.GetFloorsAboveCodes());
+            Populate(InteriorWallCodes, _codeLibrary.GetInteriorWallCodes());
 
             if (_excelFilePath != null)
                 InferSelections(_excelFilePath);
@@ -187,7 +208,7 @@ namespace HotPort.ViewModels
             var mainRow = wallRows.FirstOrDefault(r =>
                 !string.IsNullOrEmpty(r.siding) &&
                 !r.siding.Equals("n/a", System.StringComparison.OrdinalIgnoreCase) &&
-                !r.spacing.Contains("12"));
+                !r.spacing.Contains("12") && !r.spacing.Contains("8"));
             if (mainRow != default)
                 SelectedMainWallCode = Match(WallCodes, _codeLibrary!.InferWallCode(mainRow.spacing, mainRow.siding));
 
@@ -211,6 +232,8 @@ namespace HotPort.ViewModels
             SelectedVaultCode = Match(VaultCodes, _codeLibrary!.InferVaultCode());
             SelectedExposedFloorCode = Match(ExposedFloorCodes, _codeLibrary!.InferExposedFloorCode());
             SelectedGarageFloorCode = Match(GarageFloorCodes, _codeLibrary!.InferGarageFloorCode());
+            SelectedFloorsAboveCode = Match(FloorsAboveCodes, _codeLibrary!.InferFloorsAboveCode());
+            SelectedInteriorWallCode = Match(InteriorWallCodes, _codeLibrary!.InferInteriorWallCode());
         }
 
         // Finds the collection entry whose label matches the inferred entry
@@ -237,7 +260,7 @@ namespace HotPort.ViewModels
             }
         }
 
-        private void CreateEnerguid()
+        private void CreateEnerguide()
         {
             if (_templatePath == null)
             {
@@ -269,13 +292,14 @@ namespace HotPort.ViewModels
                 _codeLibrary.InferCathedralCode(),
                 _codeLibrary.InferFlatCode(),
                 SelectedExposedFloorCode,
-                SelectedGarageFloorCode);
+                SelectedGarageFloorCode,
+                SelectedFloorsAboveCode,
+                SelectedInteriorWallCode);
 
             string address = MainWindowViewModel.SplitAddress(System.IO.Path.GetFileName(_excelFilePath));
             energuide.ChangeAddress(address);
             energuide.Generate();
-
-            string defaultName = System.IO.Path.GetFileNameWithoutExtension(_templatePath) + "-ENERGUIDE";
+            string defaultName = address + "-P";
             if (_dialogs.TrySaveFile(
                     "Save Energuide File",
                     "House Files (*.h2k)|*.h2k",

@@ -205,7 +205,7 @@ namespace HotPort
                         new XAttribute("code", "2"),
                         new XAttribute("value", dhwEF),
                         new XAttribute("inputCapacity", "0"),
-                        new XAttribute("isUniform", UEF.ToString()),
+                        new XAttribute("isUniform", UEF.ToString().ToLower()),
                         new XElement("English", "User specified"),
                         new XElement("French", "Spécifié par l'utilisateur")),
                     new XElement("TankLocation",

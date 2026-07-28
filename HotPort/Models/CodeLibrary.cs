@@ -4,6 +4,7 @@ using System.Xml.Linq;
 
 namespace HotPort.Models
 {
+    public record CodeRef(string Idref, string RValue, string Label);
     public class CodeEntry
     {
         public string Id { get; }
@@ -11,6 +12,9 @@ namespace HotPort.Models
         public double NominalRValue { get; }
         public XElement Element { get; }
         public string CodSection { get; }
+        // The COD block this code lives under: "UserDefined" or "Favorite".
+        // Determines which wrapper it must be written under in the house file's <Codes>.
+        public string Wrapper { get; }
 
         public CodeEntry(XElement code, string codSection)
         {
@@ -19,6 +23,7 @@ namespace HotPort.Models
             NominalRValue = double.TryParse(code.Attribute("nominalRValue")?.Value, out double r) ? r : 0;
             Element = code;
             CodSection = codSection;
+            Wrapper = code.Parent?.Name.LocalName ?? "UserDefined";
         }
 
         public override string ToString() => Label;
@@ -65,6 +70,13 @@ namespace HotPort.Models
         public IReadOnlyList<CodeEntry> GetFloorCodes() =>
             CodesUnder("Floor");
 
+        public IReadOnlyList<CodeEntry> GetFloorsAboveCodes() =>
+            CodesUnder("FloorsAbove");
+
+        // Interior basement wall insulation codes
+        public IReadOnlyList<CodeEntry> GetInteriorWallCodes() =>
+            CodesUnder("BasementWall");
+
         public IReadOnlyList<CodeEntry> ExposedFloorCodes() =>
             GetFloorCodes().Where(e => !e.Label.Contains("Gar")).ToList();
 
@@ -97,11 +109,19 @@ namespace HotPort.Models
         public CodeEntry? InferGarageFloorCode() =>
             GetFloorCodes().FirstOrDefault(e => e.Label.Contains("Gar"));
 
-        // Returns all UserDefined codes under the named component section
+        public CodeEntry? InferFloorsAboveCode() =>
+            GetFloorsAboveCodes().FirstOrDefault();
+
+        public CodeEntry? InferInteriorWallCode() =>
+            GetInteriorWallCodes().FirstOrDefault();
+
+        // Returns all codes under the named component section, from both the
+        // <UserDefined> and <Favorite> blocks (a section may use either or both)
         private IReadOnlyList<CodeEntry> CodesUnder(string sectionName) =>
             _cod.Root?
                 .Element(sectionName)?
-                .Element("UserDefined")?
+                .Elements()
+                .Where(b => b.Name.LocalName is "UserDefined" or "Favorite")
                 .Elements("Code")
                 .Select(e => new CodeEntry(e, sectionName))
                 .ToList()

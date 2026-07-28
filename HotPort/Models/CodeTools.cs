@@ -73,11 +73,30 @@ namespace HotPort
                 codeIDs.Add(int.Parse(codeStrings[1]));
             }
             codeIDs.Sort();
-            return codeIDs.Last() + 1;
+            if (codeIDs.Count > 0)
+            {
+                return codeIDs.Last() + 1;
+            }
+            else return 1;
+        }
+        public static int GetValidComponentID(XDocument newHouse)
+        {
+            List<string> ids = new();
+            var hasID =
+                from el in newHouse.Descendants("House").Descendants().Attributes("id")
+                where el.Value != null
+                select el.Value;
+
+            foreach (string id in hasID)
+            {
+                ids.Add(id);
+            }
+            List<int> idList = ids.Select(s => int.Parse(s)).ToList();
+            return idList.Max() + 1;
         }
         /**
-         * Searches the <Codes></Codes> block for existing window codes that match the one specified by the window
-         * Adds the code to the <Codes></Codes> block if it doesn't 
+         * Searches the <Codes> block for existing window codes that match the one specified by the window
+         * Adds the code to the <Codes> block if it doesn't 
          */
         public static int FindWindowCode(XDocument house, Window window)
         {
