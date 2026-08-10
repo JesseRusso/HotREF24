@@ -34,6 +34,31 @@ namespace HotPort
                             new XAttribute("code", "1"))));
             return code;
         }
+        public static XElement DoorWindowCode(XDocument house)
+        {
+            int codeInt = GetValidCodeID(house);
+            XElement code =
+                new XElement("Code",
+                    new XAttribute("id", "Code " + codeInt),
+                    new XAttribute("value", "233004"),
+                    new XAttribute("nomimalRValue", "0"),
+                    new XElement("Label", "P2EA"),
+                    new XElement("Description", "Copy of H2EA"),
+                    new XElement("Layers",
+                        new XElement("GlazingTypes",
+                            new XAttribute("code", "2")),
+                        new XElement("CoatingsTints",
+                            new XAttribute("code", "3")),
+                        new XElement("FillType",
+                            new XAttribute("code", "3")),
+                        new XElement("SpacerType",
+                            new XAttribute("code", "0")),
+                        new XElement("Type",
+                            new XAttribute("code", "0")),
+                        new XElement("FrameMaterial",
+                            new XAttribute("code", "4"))));
+            return code;
+        }
         public static XElement AddWindowCode(Window window, XDocument house)
         {
             string codeString = "Code " + GetValidCodeID(house);

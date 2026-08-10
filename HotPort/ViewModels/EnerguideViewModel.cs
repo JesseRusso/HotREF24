@@ -148,6 +148,7 @@ namespace HotPort.ViewModels
         {
             _excelFilePath = excelFilePath;
             TryAutoLoadCod(excelFilePath);
+            TryAutoLoadTemplate(excelFilePath);
         }
 
         private void TryAutoLoadCod(string excelFilePath)
@@ -192,6 +193,24 @@ namespace HotPort.ViewModels
                 InferSelections(_excelFilePath);
         }
 
+        private void TryAutoLoadTemplate(string excelFilePath)
+        {
+            string templateDir = Settings.Default.TemplateDir;
+            if (string.IsNullOrEmpty(templateDir) || !Directory.Exists(templateDir))
+                return;
+            string builderName = ExcelHelper.GetCellValue(excelFilePath, "Calc", "K1");
+            if (string.IsNullOrEmpty(builderName))
+                return;
+            string[] matches = Directory.GetFiles(templateDir, "*.h2k", SearchOption.TopDirectoryOnly)
+                .Where(f => Path.GetFileName(f).Contains(builderName, System.StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (matches.Length > 0)
+            {
+                TemplatePath = matches[0];
+                TemplateLabel = System.IO.Path.GetFileNameWithoutExtension(matches[0]);
+            }
+        }
+
         private void InferSelections(string excelFilePath)
         {
             // Read all wall rows (B21:B34 for spacing, D21:D34 for siding)
@@ -227,8 +246,9 @@ namespace HotPort.ViewModels
             string mainSiding = mainRow != default ? mainRow.siding : string.Empty;
             if (!string.IsNullOrEmpty(mainSiding))
                 SelectedFloorHeaderCode = Match(FloorHeaderCodes, _codeLibrary!.InferFloorHeaderCode(mainSiding));
+            else SelectedFloorHeaderCode = Match(FloorHeaderCodes, _codeLibrary!.InferFloorHeaderCode(""));
 
-            SelectedCeilingCode = Match(CeilingCodes, _codeLibrary!.InferCeilingCode());
+                SelectedCeilingCode = Match(CeilingCodes, _codeLibrary!.InferCeilingCode());
             SelectedVaultCode = Match(VaultCodes, _codeLibrary!.InferVaultCode());
             SelectedExposedFloorCode = Match(ExposedFloorCodes, _codeLibrary!.InferExposedFloorCode());
             SelectedGarageFloorCode = Match(GarageFloorCodes, _codeLibrary!.InferGarageFloorCode());

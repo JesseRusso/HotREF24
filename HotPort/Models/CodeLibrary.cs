@@ -1,10 +1,15 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace HotPort.Models
 {
     public record CodeRef(string Idref, string RValue, string Label);
+
+    public enum WallSiding { Unknown, NoClad, Vinyl, Hardie, Stucco }
+
     public class CodeEntry
     {
         public string Id { get; }
@@ -15,6 +20,10 @@ namespace HotPort.Models
         // The COD block this code lives under: "UserDefined" or "Favorite".
         // Determines which wrapper it must be written under in the house file's <Codes>.
         public string Wrapper { get; }
+        // Nominal stud spacing (inches OC) parsed from the framing layer; null if not derivable.
+        public int? StudSpacingOC { get; }
+        // Exterior finish parsed from the siding layer; NoClad when absent.
+        public WallSiding Siding { get; }
 
         public CodeEntry(XElement code, string codSection)
         {
@@ -24,6 +33,43 @@ namespace HotPort.Models
             Element = code;
             CodSection = codSection;
             Wrapper = code.Parent?.Name.LocalName ?? "UserDefined";
+            StudSpacingOC = ParseStudSpacingOC(code);
+            Siding = ParseSiding(code);
+        }
+
+        // WoodFraming/Framing/@spacing is metric (mm); convert to nominal OC inches.
+        private static int? ParseStudSpacingOC(XElement code)
+        {
+            XElement? framing = code.Descendants("Framing")
+                .FirstOrDefault(f => f.Attribute("spacing") != null);
+            if (framing == null ||
+                !double.TryParse(framing.Attribute("spacing")!.Value, out double mm) || mm <= 0)
+                return null;
+            return (int)Math.Round(mm / 25.4);
+        }
+
+        // Siding is the outermost <ContinuousMedium> whose Material/Category code is
+        // 4 (exterior siding) or 2 (masonry/stucco). Absent => no-clad.
+        private static WallSiding ParseSiding(XElement code)
+        {
+            XElement? cm = code.Descendants("ContinuousMedium").LastOrDefault(m =>
+            {
+                string? cat = m.Element("Material")?.Element("Category")?.Attribute("code")?.Value;
+                return cat == "4" || cat == "2";
+            });
+            if (cm == null) return WallSiding.NoClad;
+
+            string? category = cm.Element("Material")?.Element("Category")?.Attribute("code")?.Value;
+            string? type = cm.Element("Material")?.Element("Type")?.Attribute("code")?.Value;
+
+            if (category == "2") return WallSiding.Stucco;
+            // category == "4" (exterior siding): Type distinguishes the product
+            return type switch
+            {
+                "4" => WallSiding.Vinyl,
+                "2" => WallSiding.Hardie,
+                _   => WallSiding.Unknown
+            };
         }
 
         public override string ToString() => Label;
@@ -47,15 +93,23 @@ namespace HotPort.Models
         public IReadOnlyList<CodeEntry> GetFloorHeaderCodes() =>
             CodesUnder("FloorHeader");
 
-        public IReadOnlyList<CodeEntry> GetCeilingCodes() =>
-            CodesUnder("Ceiling")
+        public IReadOnlyList<CodeEntry> GetCeilingCodes()
+        {
+            var codes = CodesUnder("Ceiling")
                 .Where(e => !e.Label.Contains("Vault") && !e.Label.Contains("Vlt"))
                 .ToList();
+            return codes;
+        }
 
-        public IReadOnlyList<CodeEntry> GetVaultCodes() =>
-            CodesUnder("Ceiling")
+
+        public IReadOnlyList<CodeEntry> GetVaultCodes()
+        {
+           var vaults = CodesUnder("Ceiling")
                 .Where(e => e.Label.Contains("Vault") || e.Label.Contains("Vlt"))
                 .ToList();
+            return vaults.Count > 0 ? vaults : GetCeilingCodes();
+        }
+
 
         public IReadOnlyList<CodeEntry> GetCathedralCodes() =>
             CodesUnder("CeilingFlat")
@@ -83,16 +137,59 @@ namespace HotPort.Models
         public IReadOnlyList<CodeEntry> GarageFloorCodes() =>
             GetFloorCodes().Where(e => e.Label.Contains("Gar")).ToList();
 
-        // Infer wall code from stud spacing and siding type strings
-        public CodeEntry? InferWallCode(string spacing, string siding) =>
-            BestMatch(GetWallCodes(), spacing, siding);
+        // Infer wall code from stud spacing and siding type strings (spreadsheet values).
+        // Prefer a structured match on the code's parsed framing spacing + siding layer;
+        // fall back to label matching when the request or the codes aren't structured.
+        public CodeEntry? InferWallCode(string spacing, string siding)
+        {
+            var walls = GetWallCodes();
+
+            int? wantOC = ParseRequestedSpacingOC(spacing);
+            WallSiding wantSiding = ParseRequestedSiding(siding);
+
+            if (wantOC != null && wantSiding != WallSiding.Unknown)
+            {
+                CodeEntry? structured = walls
+                    .Where(c => c.StudSpacingOC == wantOC && c.Siding == wantSiding)
+                    .OrderBy(c => c.Label.Length)  // prefer the base variant over ZLL/DW/etc.
+                    .FirstOrDefault();
+                if (structured != null)
+                    return structured;
+            }
+
+            return BestMatch(walls, spacing, siding);
+        }
+
+        // "24 OC" -> 24, "16 OC" -> 16; null if no number present.
+        private static int? ParseRequestedSpacingOC(string spacing)
+        {
+            if (string.IsNullOrEmpty(spacing)) return null;
+            Match m = Regex.Match(spacing, @"\d+");
+            return m.Success && int.TryParse(m.Value, out int oc) ? oc : (int?)null;
+        }
+
+        private static WallSiding ParseRequestedSiding(string siding)
+        {
+            if (string.IsNullOrWhiteSpace(siding)) return WallSiding.Unknown;
+            return siding.Replace(" ", string.Empty).ToLowerInvariant() switch
+            {
+                "vinyl"  => WallSiding.Vinyl,
+                "hardie" => WallSiding.Hardie,
+                "stucco" => WallSiding.Stucco,
+                "noclad" or "n/a" or "na" => WallSiding.NoClad,
+                _ => WallSiding.Unknown
+            };
+        }
 
         // Floor headers share siding with walls but have no spacing
-        public CodeEntry? InferFloorHeaderCode(string siding) =>
-            BestMatch(GetFloorHeaderCodes(), siding);
+        public CodeEntry? InferFloorHeaderCode(string siding)
+        {
+            var codes = GetFloorHeaderCodes();
+            return BestMatch(codes, siding) ?? codes.FirstOrDefault();
+        }
 
         public CodeEntry? InferCeilingCode() =>
-            GetCeilingCodes().FirstOrDefault();
+            GetCeilingCodes().OrderByDescending(e => e.NominalRValue).FirstOrDefault();
 
         public CodeEntry? InferVaultCode() =>
             GetVaultCodes().FirstOrDefault();
