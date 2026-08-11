@@ -25,8 +25,7 @@ namespace HotPort.ViewModels
         public ICommand TemplateCommand { get; }
         public ICommand CreateRefCommand { get; }
         public ICommand CreatePropCommand { get; }
-        public ICommand DefaultDirectoryCommand { get; }
-        public ICommand CodeLibDirectoryCommand { get; }
+        public ICommand SettingsCommand { get; }
 
         // --- Zone profiles loaded from ReferenceProfiles.xml ---
         private readonly XElement[] _profiles;
@@ -117,8 +116,7 @@ namespace HotPort.ViewModels
             TemplateCommand = new RelayCommand(SelectTemplate);
             CreateRefCommand = new RelayCommand(CreateRef);
             CreatePropCommand = new RelayCommand(CreateProp);
-            DefaultDirectoryCommand = new RelayCommand(SelectDefaultDirectory);
-            CodeLibDirectoryCommand = new RelayCommand(SelectCodeLibDirectory);
+            SettingsCommand = new RelayCommand(() => _dialogs.ShowSettings());
         }
 
         private void SelectWorksheet()
@@ -256,24 +254,6 @@ namespace HotPort.ViewModels
             TemplatePath = null;
             TemplateLabel = "No template selected";
             ExcelHelper.CloseCachedDocuments();
-        }
-
-        private void SelectDefaultDirectory()
-        {
-            if (_dialogs.TryOpenFolder(out string path))
-            {
-                Settings.Default.TemplateDir = path;
-                Settings.Default.Save();
-            }
-        }
-
-        private void SelectCodeLibDirectory()
-        {
-            if (_dialogs.TryOpenFolder(out string path))
-            {
-                Settings.Default.CodeLibDir = path;
-                Settings.Default.Save();
-            }
         }
 
         public static string SplitAddress(string filePath)

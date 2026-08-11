@@ -7,5 +7,6 @@ namespace HotPort.Infrastructure
         bool TryOpenFolder(out string path);
         void ShowError(string message, string title);
         void ShowWarning(string message, string title);
+        void ShowSettings();
     }
 }

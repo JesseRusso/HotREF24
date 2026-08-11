@@ -13,10 +13,7 @@
         </DockPanel.Background>
         <!-- Settings menu spans both tabs -->
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="Settings" Margin="15,0,0,0">
-                <MenuItem Header="Default template directory" Command="{Binding DefaultDirectoryCommand}"/>
-                <MenuItem Header="Code library directory" Command="{Binding CodeLibDirectoryCommand}"/>
-            </MenuItem>
+            <MenuItem Header="Settings" Margin="15,0,0,0" Command="{Binding SettingsCommand}"/>
         </Menu>
 
         <!-- Worksheet selector spans both tabs -->

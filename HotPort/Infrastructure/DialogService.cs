@@ -1,3 +1,5 @@
+using HotPort.ViewModels;
+using HotPort.Views;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using System.Windows;
@@ -56,5 +58,15 @@ namespace HotPort.Infrastructure
 
         public void ShowWarning(string message, string title) =>
             MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+
+        public void ShowSettings()
+        {
+            var window = new SettingsWindow
+            {
+                Owner = Application.Current?.MainWindow,
+                DataContext = new SettingsViewModel(this)
+            };
+            window.ShowDialog();
+        }
     }
 }

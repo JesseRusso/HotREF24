@@ -26,5 +26,11 @@
     <Setting Name="FrontTransom" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="GarageDoorWidth" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">0.8382</Value>
+    </Setting>
+    <Setting Name="GarageDoorHeight" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">2.0828</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

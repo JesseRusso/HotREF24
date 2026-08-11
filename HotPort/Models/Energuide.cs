@@ -891,7 +891,7 @@ namespace HotPort.Models
             }
             if (gar != null)
             {
-                XElement garageDoor = Door.PolystyreneDoor(0.8382, 2.0828, "Garage", AssignComponentID());
+                XElement garageDoor = Door.PolystyreneDoor(Settings.Default.GarageDoorWidth, Settings.Default.GarageDoorHeight, "Garage", AssignComponentID());
                 gar.Element("Components").Add(garageDoor);
             }
         }

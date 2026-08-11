@@ -118,5 +118,29 @@ namespace HotPort.Properties {
                 this["FrontTransom"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.8382")]
+        public double GarageDoorWidth {
+            get {
+                return ((double)(this["GarageDoorWidth"]));
+            }
+            set {
+                this["GarageDoorWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2.0828")]
+        public double GarageDoorHeight {
+            get {
+                return ((double)(this["GarageDoorHeight"]));
+            }
+            set {
+                this["GarageDoorHeight"] = value;
+            }
+        }
     }
 }
