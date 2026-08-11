@@ -82,7 +82,6 @@ namespace HotPort.Models
             SetFileId();
             ChangeCityWeather();
             ChangeSpecs();
-            ChangeHRV();
             ChangeFurnace();
             CheckAC();
             ProcessWalls();
@@ -93,6 +92,7 @@ namespace HotPort.Models
             CheckVaults();
             CheckFloors();
             CheckBasement();
+            ChangeHRV();
             GasDHW();
             ElectricDHW();
             CheckFireplace();
@@ -349,6 +349,17 @@ namespace HotPort.Models
                     hrv.Element("Hrv").SetAttributeValue("fanPower2", hrvPower2);
                     hrv.Element("Hrv").SetAttributeValue("efficiency1", hrvSRE1);
                     hrv.Element("Hrv").SetAttributeValue("efficiency2", hrvSRE2);
+
+                    if (_basementPresent)
+                    {
+                        hrv.Element("Hrv").Element("ColdAirDucts").Element("Supply").Element("Location").SetAttributeValue("code", "1");
+                        hrv.Element("Hrv").Element("ColdAirDucts").Element("Exhaust").Element("Location").SetAttributeValue("code", "1");
+                    }
+                    else
+                    {
+                        hrv.Element("Hrv").Element("ColdAirDucts").Element("Supply").Element("Location").SetAttributeValue("code", "4");
+                        hrv.Element("Hrv").Element("ColdAirDucts").Element("Exhaust").Element("Location").SetAttributeValue("code", "4");
+                    }
                 }
             }
         }
@@ -855,7 +866,7 @@ namespace HotPort.Models
                 }
             }
         }
-
+        //Adds a front door with a transom to the first floor wall and a garage door to the garage wall
         private void AddDoors()
         {
             XElement? firstFlr = (from el in House.Descendants("Wall")
@@ -867,7 +878,8 @@ namespace HotPort.Models
             if (firstFlr != null)
             {
                 XElement front = Door.FrontDoor(1.651, 2.5146, AssignComponentID());
-                Door.AddTransom(House, front, AssignComponentID());
+                Door.AddTransom(House, front, AssignComponentID(), _nextCodeId);
+                _nextCodeId++;
                 if (firstFlr.Element("Components") == null)
                 {
                     firstFlr.Add(new XElement("Components"));

@@ -72,7 +72,7 @@ namespace HotPort
             return door;
         }
 
-        public static void AddTransom(XDocument house, XElement door, int id)
+        public static void AddTransom(XDocument house, XElement door, int id, int codeId)
         {
             XElement? comp = door.Element("Components");
             if (comp == null)
@@ -92,7 +92,7 @@ namespace HotPort
                     new XElement("Construction",
                     new XAttribute("energyStar", "false"),
                         new XElement("Type", "P2EA",
-                        new XAttribute("idref", $"Code {AddDoorWindowCode(house)}"),
+                        new XAttribute("idref", $"Code {AddDoorWindowCode(house, codeId)}"),
                         new XAttribute("rValue", "0.4019"))),
                     new XElement("Measurements",
                     new XAttribute("height", "304.8"),
@@ -113,7 +113,7 @@ namespace HotPort
                     new XElement("French", "Nord")));
             comp.Add(windowBlock);
         }
-        private static string AddDoorWindowCode(XDocument house)
+        private static string AddDoorWindowCode(XDocument house, int id)
         {
             XElement? codesEl = house.Root?.Element("Codes");
             XElement? windowCodes = house.Root?.Element("Codes")?.Element("Window");
@@ -140,7 +140,7 @@ namespace HotPort
             }
             else
             {
-                XElement code = CodeTools.DoorWindowCode(house);
+                XElement code = CodeTools.DoorWindowCode(house, id);
                 codeId = code.Attribute("id").Value.ToString().Split(" ").Last();
                 house.Root.Element("Codes").Element("Window").Element("Favorite").Add(code);
             }

@@ -34,12 +34,12 @@ namespace HotPort
                             new XAttribute("code", "1"))));
             return code;
         }
-        public static XElement DoorWindowCode(XDocument house)
+        public static XElement DoorWindowCode(XDocument house, int id)
         {
-            int codeInt = GetValidCodeID(house);
+            //int codeInt = GetValidCodeID(house);
             XElement code =
                 new XElement("Code",
-                    new XAttribute("id", "Code " + codeInt),
+                    new XAttribute("id", "Code " + id),
                     new XAttribute("value", "233004"),
                     new XAttribute("nomimalRValue", "0"),
                     new XElement("Label", "P2EA"),

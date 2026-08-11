@@ -37,37 +37,62 @@ namespace HotPort.Models
             Siding = ParseSiding(code);
         }
 
-        // WoodFraming/Framing/@spacing is metric (mm); convert to nominal OC inches.
+        // Parses nominal stud spacing (inches OC), handling both code layer formats.
         private static int? ParseStudSpacingOC(XElement code)
         {
+            // UserDefined format: WoodFraming/Framing/@spacing is metric (mm).
             XElement? framing = code.Descendants("Framing")
                 .FirstOrDefault(f => f.Attribute("spacing") != null);
-            if (framing == null ||
-                !double.TryParse(framing.Attribute("spacing")!.Value, out double mm) || mm <= 0)
-                return null;
-            return (int)Math.Round(mm / 25.4);
+            if (framing != null &&
+                double.TryParse(framing.Attribute("spacing")!.Value, out double mm) && mm > 0)
+                return (int)Math.Round(mm / 25.4);
+
+            // Standard/Favorite format: <Spacing> layer's code.
+            return code.Descendants("Spacing").FirstOrDefault()?.Attribute("code")?.Value switch
+            {
+                "0" => 12,
+                "1" => 16,
+                "2" => 19,
+                "3" => 24,
+                _   => (int?)null
+            };
         }
 
-        // Siding is the outermost <ContinuousMedium> whose Material/Category code is
-        // 4 (exterior siding) or 2 (masonry/stucco). Absent => no-clad.
+        // Parses the exterior finish, handling both code layer formats.
         private static WallSiding ParseSiding(XElement code)
         {
-            XElement? cm = code.Descendants("ContinuousMedium").LastOrDefault(m =>
+            // UserDefined format: siding is a <ContinuousMedium> whose Material/Category
+            // code is 4 (exterior siding) or 2 (masonry/stucco).
+            var continuousMedia = code.Descendants("ContinuousMedium").ToList();
+            if (continuousMedia.Count > 0)
             {
-                string? cat = m.Element("Material")?.Element("Category")?.Attribute("code")?.Value;
-                return cat == "4" || cat == "2";
-            });
-            if (cm == null) return WallSiding.NoClad;
+                XElement? cm = continuousMedia.LastOrDefault(m =>
+                {
+                    string? cat = m.Element("Material")?.Element("Category")?.Attribute("code")?.Value;
+                    return cat == "4" || cat == "2";
+                });
+                if (cm == null) return WallSiding.NoClad;
 
-            string? category = cm.Element("Material")?.Element("Category")?.Attribute("code")?.Value;
-            string? type = cm.Element("Material")?.Element("Type")?.Attribute("code")?.Value;
+                string? category = cm.Element("Material")?.Element("Category")?.Attribute("code")?.Value;
+                string? type = cm.Element("Material")?.Element("Type")?.Attribute("code")?.Value;
 
-            if (category == "2") return WallSiding.Stucco;
-            // category == "4" (exterior siding): Type distinguishes the product
-            return type switch
+                if (category == "2") return WallSiding.Stucco;
+                // category == "4" (exterior siding): Type distinguishes the product
+                return type switch
+                {
+                    "4" => WallSiding.Vinyl,
+                    "2" => WallSiding.Hardie,
+                    _   => WallSiding.Unknown
+                };
+            }
+
+            // Standard/Favorite format: siding is the <Exterior> layer's code.
+            return code.Descendants("Exterior").FirstOrDefault()?.Attribute("code")?.Value switch
             {
-                "4" => WallSiding.Vinyl,
-                "2" => WallSiding.Hardie,
+                "0" => WallSiding.NoClad,
+                "1" => WallSiding.Hardie,  // Wood (lapped)
+                "2" => WallSiding.Vinyl,   // Hollow metal/vinyl cladding
+                "6" => WallSiding.Stucco,
                 _   => WallSiding.Unknown
             };
         }
