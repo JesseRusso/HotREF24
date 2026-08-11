@@ -14,10 +14,6 @@ namespace HotPort.Models
         public static string GetCellValue(string filePath, string sheetName, string cellReference)
         {
             var doc = GetDocument(filePath);
-
-            //using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            //using var doc = SpreadsheetDocument.Open(stream, false);
-
             WorkbookPart? wbPart = doc.WorkbookPart;
             Sheet? theSheet = wbPart?.Workbook.Descendants<Sheet>()
                 .FirstOrDefault(s => s.Name == sheetName);

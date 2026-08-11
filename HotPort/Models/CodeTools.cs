@@ -34,6 +34,31 @@ namespace HotPort
                             new XAttribute("code", "1"))));
             return code;
         }
+        public static XElement DoorWindowCode(XDocument house, int id)
+        {
+            //int codeInt = GetValidCodeID(house);
+            XElement code =
+                new XElement("Code",
+                    new XAttribute("id", "Code " + id),
+                    new XAttribute("value", "233004"),
+                    new XAttribute("nomimalRValue", "0"),
+                    new XElement("Label", "P2EA"),
+                    new XElement("Description", "Copy of H2EA"),
+                    new XElement("Layers",
+                        new XElement("GlazingTypes",
+                            new XAttribute("code", "2")),
+                        new XElement("CoatingsTints",
+                            new XAttribute("code", "3")),
+                        new XElement("FillType",
+                            new XAttribute("code", "3")),
+                        new XElement("SpacerType",
+                            new XAttribute("code", "0")),
+                        new XElement("Type",
+                            new XAttribute("code", "0")),
+                        new XElement("FrameMaterial",
+                            new XAttribute("code", "4"))));
+            return code;
+        }
         public static XElement AddWindowCode(Window window, XDocument house)
         {
             string codeString = "Code " + GetValidCodeID(house);
@@ -73,11 +98,30 @@ namespace HotPort
                 codeIDs.Add(int.Parse(codeStrings[1]));
             }
             codeIDs.Sort();
-            return codeIDs.Last() + 1;
+            if (codeIDs.Count > 0)
+            {
+                return codeIDs.Last() + 1;
+            }
+            else return 1;
+        }
+        public static int GetValidComponentID(XDocument newHouse)
+        {
+            List<string> ids = new();
+            var hasID =
+                from el in newHouse.Descendants("House").Descendants().Attributes("id")
+                where el.Value != null
+                select el.Value;
+
+            foreach (string id in hasID)
+            {
+                ids.Add(id);
+            }
+            List<int> idList = ids.Select(s => int.Parse(s)).ToList();
+            return idList.Max() + 1;
         }
         /**
-         * Searches the <Codes></Codes> block for existing window codes that match the one specified by the window
-         * Adds the code to the <Codes></Codes> block if it doesn't 
+         * Searches the <Codes> block for existing window codes that match the one specified by the window
+         * Adds the code to the <Codes> block if it doesn't 
          */
         public static int FindWindowCode(XDocument house, Window window)
         {
