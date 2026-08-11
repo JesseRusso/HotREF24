@@ -147,9 +147,6 @@ namespace HotPort.Models
 
             wallRValue = first.Element("Construction").Element("Type").Attribute("rValue").Value.ToString();
             string? rimRValue = first.Element("Components")?.Element("FloorHeader")?.Element("Construction")?.Element("Type")?.Attribute("rValue")?.Value.ToString();
-
-            //first.Element("Measurements").SetAttributeValue("height", Math.Round(Convert.ToDouble(GetCellValue("Calc", "G21")) * 0.3048, 3));
-            //first.Element("Measurements").SetAttributeValue("perimeter", Math.Round(Convert.ToDouble(GetCellValue("Calc", "H21")) * 0.3048, 3));
             first.Element("Measurements").SetAttributeValue("height", Math.Round(GetDoubleCellValue("Calc", "G21") * 0.3048, 3));
             first.Element("Measurements").SetAttributeValue("perimeter", Math.Round(GetDoubleCellValue("Calc", "H21") * 0.3048, 3));
             first.Element("Construction").SetAttributeValue("corners", GetCellValue("Calc", "E21"));

@@ -85,7 +85,7 @@ namespace HotPort.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.9398")]
         public double FrontDoorWidth {
             get {
                 return ((double)(this["FrontDoorWidth"]));
@@ -97,7 +97,7 @@ namespace HotPort.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("2.3876")]
         public double FrontDoorHeight {
             get {
                 return ((double)(this["FrontDoorHeight"]));
@@ -109,7 +109,7 @@ namespace HotPort.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool FrontTransom {
             get {
                 return ((bool)(this["FrontTransom"]));

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
+using HotPort.Properties;
 
 namespace HotPort.Models
 {
@@ -877,9 +878,11 @@ namespace HotPort.Models
                                   select el).FirstOrDefault();
             if (firstFlr != null)
             {
-                XElement front = Door.FrontDoor(1.651, 2.5146, AssignComponentID());
-                Door.AddTransom(House, front, AssignComponentID(), _nextCodeId);
-                _nextCodeId++;
+                XElement front = Door.FrontDoor(Settings.Default.FrontDoorWidth, Settings.Default.FrontDoorHeight, AssignComponentID());
+                if (Settings.Default.FrontTransom)
+                {
+                    Door.AddTransom(House, front, AssignComponentID(), _nextCodeId++);
+                }
                 if (firstFlr.Element("Components") == null)
                 {
                     firstFlr.Add(new XElement("Components"));
