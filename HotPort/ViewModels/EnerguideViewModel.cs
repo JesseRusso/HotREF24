@@ -323,7 +323,7 @@ namespace HotPort.ViewModels
             if (_dialogs.TrySaveFile(
                     "Save Energuide File",
                     "House Files (*.h2k)|*.h2k",
-                    System.IO.Path.GetDirectoryName(_templatePath),
+                    System.IO.Path.GetDirectoryName(_excelFilePath),
                     defaultName,
                     out string savePath))
             {
