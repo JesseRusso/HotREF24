@@ -27,7 +27,7 @@ namespace HotPort.Models
         private readonly CodeEntry? _garageFloorCode;
         private readonly CodeEntry? _floorsAboveCode;
         private readonly CodeEntry? _interiorWallCode;
-        private int _maxWindowRow = 62;
+        private readonly CodeEntry? _ponyWallCode;
 
         private readonly Dictionary<string, string> _assignedIds = new();
         private readonly List<CodeEntry> _usedCodes = new();
@@ -47,7 +47,8 @@ namespace HotPort.Models
             CodeEntry? exposedFloorCode,
             CodeEntry? garageFloorCode,
             CodeEntry? floorsAboveCode,
-            CodeEntry? interiorWallCode)
+            CodeEntry? interiorWallCode,
+            CodeEntry? ponyWallCode)
         {
             House = new XDocument(template);
             _excelFilePath = excelFilePath;
@@ -63,6 +64,7 @@ namespace HotPort.Models
             _garageFloorCode = garageFloorCode;
             _floorsAboveCode = floorsAboveCode;
             _interiorWallCode = interiorWallCode;
+            _ponyWallCode = ponyWallCode;
         }
 
         // ── Entry points ───────────────────────────────────────────────────────
@@ -71,6 +73,11 @@ namespace HotPort.Models
         {
             BuildHouse();
             BuildCodesSection();
+            if (Settings.Default.ErsWindowsCheckbox)
+            {
+                RemoveWindows();
+                ExtractWindows();
+            }
         }
 
         public void BuildHouse()
@@ -98,6 +105,7 @@ namespace HotPort.Models
             ElectricDHW();
             CheckFireplace();
             AddDoors();
+            SolarPanels();
         }
 
         public void ChangeAddress(string address)
@@ -373,6 +381,7 @@ namespace HotPort.Models
             if (GetDoubleCellValue("General", "B4") > 0)
                 furnaceModel += $" & {GetCellValue("Summary", "B79")}";
 
+            //Sets the values in the Furnace screen
             foreach (XElement furn in House.Descendants("Furnace"))
             {
                 furn.Element("Specifications")?.SetAttributeValue("efficiency", GetCellValue("General", "A6"));
@@ -380,7 +389,13 @@ namespace HotPort.Models
                     ?.SetAttributeValue("value", Math.Round(furnaceBtus * 0.00029307107, 5).ToString());
                 furn.Element("EquipmentInformation").Element("Manufacturer").SetValue(GetCellValue("Summary", "A78"));
                 furn.Element("EquipmentInformation").Element("Model").SetValue(furnaceModel);
+
+                if (Builder.ToLower().Contains("trico"))
+                {
+                    furn.Element("Specifications").Element("OutputCapacity").SetAttributeValue("code", "2");
+                }
             }
+            //Sets the values in the "Fans/Pumps" screen
             foreach (XElement fan in House.Descendants("HeatingCooling"))
             {
                 fan.Element("Type1").Element("FansAndPump").SetAttributeValue("hasEnergyEfficientMotor", "true");
@@ -394,19 +409,34 @@ namespace HotPort.Models
 
         private void CheckAC()
         {
-            string ACBtus = GetCellValue("General", "Q26");
-            if (!int.TryParse(ACBtus, out int cap) || cap <= 0) return;
+            string ACSeer = GetCellValue("General", "O26");
+            if (!double.TryParse(ACSeer, out double seer) || seer <= 0) return;
+
+            string make = GetCellValue("General", "N25");
+            string model = GetCellValue("General", "P25");
+            string ahri = GetCellValue("General", "R26");
+            string indoorCoil = GetCellValue("General", "T26");
+            string seer2 = GetCellValue("General", "Q26").ToLower();
+
+            if(ahri != null || ahri != string.Empty)
+            {
+                make += $" AHRI#{ahri}";
+            }
+            if(indoorCoil != null || indoorCoil != string.Empty)
+            {
+                model += $" / {indoorCoil}";
+            }
 
             House?.Element("HouseFile")?.Element("House")?.Element("Temperatures")?.Element("Basement")
                  ?.SetAttributeValue("cooled", "true");
 
             XElement? type2 = House?.Descendants("HeatingCooling").Descendants("Type2").FirstOrDefault();
-            type2?.Add(
+            XElement airCon =
                 new XElement("AirConditioning",
                     new XElement("EquipmentInformation",
                         new XAttribute("energystar", "false"),
-                        new XElement("Manufacturer", GetCellValue("General", "N25")),
-                        new XElement("Model", GetCellValue("General", "P25"))),
+                        new XElement("Manufacturer", make),
+                        new XElement("Model", model)),
                     new XElement("Equipment",
                         new XAttribute("crankcaseHeater", "60"),
                         new XElement("CentralType", new XAttribute("code", "1"))),
@@ -418,7 +448,7 @@ namespace HotPort.Models
                             new XAttribute("uiUnits", "btu/hr")),
                         new XElement("Efficiency",
                             new XAttribute("isCop", "false"),
-                            new XAttribute("value", GetCellValue("General", "O26")))),
+                            new XAttribute("value", seer))),
                     new XElement("CoolingParameters",
                         new XAttribute("sensibleHeatRatio", "0.76"),
                         new XAttribute("openableWindowArea", "0"),
@@ -426,7 +456,12 @@ namespace HotPort.Models
                             new XAttribute("flowRate", "123"),
                             new XAttribute("hasEnergyEfficientMotor", "false"),
                             new XElement("Mode", new XAttribute("code", "1")),
-                            new XElement("Power", new XAttribute("isCalculated", "true"))))));
+                            new XElement("Power", new XAttribute("isCalculated", "true")))));
+            if(seer2 == "y")
+            {
+                airCon.Element("Specifications").Element("Efficiency").SetAttributeValue("unit", "2");
+            }
+            type2.Add(airCon);
         }
 
         // ── Walls ──────────────────────────────────────────────────────────────
@@ -752,6 +787,17 @@ namespace HotPort.Models
                 if(pony > 0D)
                 {
                     fnd.AddPonyWall(bsmt);
+
+                    // PonyWallType is the same structure as InteriorAddedInsulation, so code it the same way
+                    XElement? ponyType = bsmt.Element("Wall")?.Element("Construction")?.Element("PonyWallType");
+                    if (ponyType != null && _ponyWallCode != null)
+                    {
+                        string rValue = _ponyWallCode.NominalRValue.ToString();
+                        ponyType.SetAttributeValue("idref", GetOrAssignId(_ponyWallCode));
+                        ponyType.SetAttributeValue("nominalInsulation", rValue);
+                        ponyType.Element("Description")?.SetValue(_ponyWallCode.Label);
+                        ponyType.Element("Composite")?.Element("Section")?.SetAttributeValue("nominalRsi", rValue);
+                    }
                 }
                 //Adds the floor header
                 if(headerPerim > 0D)
@@ -769,6 +815,8 @@ namespace HotPort.Models
                     bsmt.Element("Floor").Element("Construction").SetAttributeValue("isBelowFrostline", "false");
 
                 House.Root.Element("House").Element("Components").Add(bsmt);
+                XElement? temps = House.Root.Element("House").Element("Temperatures").Element("Basement");
+                temps.SetAttributeValue("heated", "true");
             }
             else
             {
@@ -854,7 +902,58 @@ namespace HotPort.Models
                     .AddTank(_basementPresent);
             }
         }
+        private void SolarPanels()
+        {
+            XElement? generation = House.Root.Element("House").Element("Generation");
+            if(generation == null)
+            {
+                generation = new XElement("Generation",
+                                new XAttribute("solarReady", "false"),
+                                new XAttribute("photovoltaicCapacity", "0"),
+                                new XAttribute("batteryStorage", "0"),
+                                new XAttribute("id", AssignComponentID()),
+                                new XElement("Label", "Generation"));
+                House.Root.Add(generation);
+            }
+            if (double.TryParse(GetCellValue("General", "P33"), out double panelArea) && panelArea > 0)
+            {
+                int panelCount = 1;
+                string model = GetCellValue("General", "P31");
+                string make = GetCellValue("General", "P32");
+                double efficiency = GetDoubleCellValue("General", "P34");
+                double opTemp = GetDoubleCellValue("General", "P35");
+                double tempCoeff = GetDoubleCellValue("General", "P36");
+                XElement systems = new XElement("PhotovoltaicSystems");
 
+                int startRow = 32;
+                int endRow = 36;
+                string areaCol = "V";
+                string slopeCol = "U";
+                string azCol = "T";
+
+                for(int i = startRow; i <= endRow; i++)
+                {
+                    double area = GetDoubleCellValue("General", areaCol + i);
+                    if(area > 0)
+                    {
+                        SolarPanel panel = new SolarPanel
+                        {
+                            Area = area,
+                            Slope = Math.Round(GetDoubleCellValue("General", slopeCol + i), 4),
+                            Azimuth = GetDoubleCellValue("General", azCol + i),
+                            Efficiency = efficiency,
+                            OperatingTemp = opTemp,
+                            TempCoeff = tempCoeff,
+                            Manufacturer = make,
+                            Model = model,
+                            Rank = panelCount++
+                        };
+                        systems.Add(panel.NewPanel());
+                    }
+                }
+                House.Root.Element("House").Element("Generation").Add(systems);
+            }
+        }
         private void CheckFireplace()
         {
             bool fpPresent = GetCellValue("Calc", "M57").ToLower() == "y" ? true : false;
@@ -870,10 +969,10 @@ namespace HotPort.Models
         //Adds a front door with a transom to the first floor wall and a garage door to the garage wall
         private void AddDoors()
         {
-            XElement? firstFlr = (from el in House.Descendants("Wall")
-                                where el.Element("Label").Value.ToString().Contains("1st")
-                                select el).FirstOrDefault();
-            XElement? gar = (from el in House.Descendants("Wall")
+            XElement? firstFlr = (from el in House.Descendants("Components").Elements("Wall")
+                                  where el.Element("Label").Value.ToString().Contains("1st")
+                                  select el).FirstOrDefault();
+            XElement? gar = (from el in House.Descendants("Components").Elements("Wall")
                                   where el.Element("Label").Value.ToString().ToLower().Contains("garage")
                                   select el).FirstOrDefault();
             if (firstFlr != null)
@@ -895,30 +994,50 @@ namespace HotPort.Models
                 gar.Element("Components").Add(garageDoor);
             }
         }
+        /**
+        * Extracts window information from the spreadsheet into a list, then adds the windows and their codes to the house file
+        */
         public void ExtractWindows()
         {
             List<Window> windows = new List<Window>();
+            bool overhangPres = double.TryParse(GetCellValue("Calc", "M52"), out double overhang);
+            int maxWindowRow = Settings.Default.MaxWindowRow;
 
-            for (int i = 2; i <= _maxWindowRow; i++)
+            for (int i = 2; i <= maxWindowRow; i++)
             {
                 string? name = GetCellValue("Windows", "A" + i);
                 if (name != null && name != string.Empty && GetCellValue("Windows", "F" + i).ToLower() != "door")
                 {
-                    int width = int.Parse(GetCellValue("Windows", "B" + i));
-                    int height = int.Parse(GetCellValue("Windows", "C" + i));
-                    double uValue = GetDoubleCellValue("Windows", "D" + i);
-                    double shgc = GetDoubleCellValue("Windows", "E" + i);
-                    int floor = int.Parse(GetCellValue("Windows", "H" + i));
+                    bool widthPres = int.TryParse(GetCellValue("Windows", "B" + i), out int width);
+                    bool heightPres = int.TryParse(GetCellValue("Windows", "C" + i), out int height);
+                    bool uValuePres = double.TryParse(GetCellValue("Windows", "D" + i), out double uValue);
+                    bool shgcPres = double.TryParse(GetCellValue("Windows", "E" + i), out double shgc);
+                    bool floorPres = int.TryParse(GetCellValue("Windows", "H" + i), out int floor);
                     string operation = GetCellValue("Windows", "G" + i);
                     string direction = GetCellValue("Windows", "I" + i);
-                    double overhang = GetDoubleCellValue("Calc", "M52");
+
+                    if (!widthPres || !heightPres || !uValuePres || !shgcPres || !floorPres)
+                        continue;
 
                     name = $"{name}-{operation}";
-                    Window window = new(name, width, height, uValue, shgc, floor, direction, overhang, AssignComponentID());
+                    Window window = new(name, width, height, uValue, shgc, floor, direction, overhangPres ? overhang : 0, AssignComponentID());
                     windows.Add(window);
                     window.codeId = CodeTools.FindWindowCode(House, window);
                     window.AddWindow(House);
                 }
+            }
+        }
+        /**
+        * Removes all windows that aren't a part of door assemblies.
+        */
+        public void RemoveWindows()
+        {
+            List<XElement>? windows = House?.Root?.Element("House")?.Descendants("Window").
+                            Where(el => !el.Ancestors("Door").Any() && el != null).
+                            ToList();
+            foreach (XElement window in windows)
+            {
+                window.Remove();
             }
         }
 
@@ -959,7 +1078,7 @@ namespace HotPort.Models
                 House.Root?.Add(codesEl);
             }
 
-            var sectionsToRebuild = new HashSet<string> { "Wall", "Ceiling", "CeilingFlat", "Floor", "FloorHeader", "FloorsAbove", "BasementWall" };
+            var sectionsToRebuild = new HashSet<string> { "Wall", "Ceiling", "CeilingFlat", "Floor", "FloorHeader", "FloorsAbove", "BasementWall", "CrawlspaceWall" };
             foreach (string section in sectionsToRebuild)
                 codesEl.Element(section)?.Remove();
 

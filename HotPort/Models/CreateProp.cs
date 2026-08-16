@@ -1008,23 +1008,26 @@ namespace HotPort.Models
         public void ExtractWindows()
         {
             List<Window> windows = new List<Window>();
+            bool overhangPres = double.TryParse(GetCellValue("Calc", "M52"), out double overhang);
 
-            for(int i = 2; i <= maxWindowRow; i++)
+            for (int i = 2; i <= maxWindowRow; i++)
             {
                 string? name = GetCellValue("Windows", "A" + i);
                 if (name != null && name != string.Empty && GetCellValue("Windows", "F" + i).ToLower() != "door")
                 {
-                    int width = int.Parse(GetCellValue("Windows", "B" + i));
-                    int height = int.Parse(GetCellValue("Windows", "C" + i));
-                    double uValue = double.Parse(GetCellValue("Windows", "D" + i).ToString());
-                    double shgc = double.Parse(GetCellValue("Windows", "E" + i));
-                    int floor = int.Parse(GetCellValue("Windows", "H" + i));
+                    bool widthPres = int.TryParse(GetCellValue("Windows", "B" + i), out int width);
+                    bool heightPres = int.TryParse(GetCellValue("Windows", "C" + i), out int height);
+                    bool uValuePres = double.TryParse(GetCellValue("Windows", "D" + i), out double uValue);
+                    bool shgcPres = double.TryParse(GetCellValue("Windows", "E" + i), out double shgc);
+                    bool floorPres = int.TryParse(GetCellValue("Windows", "H" + i), out int floor);
                     string operation = GetCellValue("Windows", "G" + i);
                     string direction = GetCellValue("Windows", "I" + i);
-                    double overhang = double.Parse(GetCellValue("Calc", "M52"));
+
+                    if (!widthPres || !heightPres || !uValuePres || !shgcPres || !floorPres) 
+                        continue;
 
                     name = $"{name}-{operation}";
-                    Window window = new (name, width, height, uValue, shgc, floor, direction, overhang, maxID);
+                    Window window = new (name, width, height, uValue, shgc, floor, direction, overhangPres ? overhang : 0, maxID);
                     windows.Add(window);
                     window.codeId = CodeTools.FindWindowCode(newHouse, window);
                     window.AddWindow(newHouse);

@@ -156,6 +156,10 @@ namespace HotPort.Models
         public IReadOnlyList<CodeEntry> GetInteriorWallCodes() =>
             CodesUnder("BasementWall");
 
+        // Pony wall codes live under the CrawlspaceWall section
+        public IReadOnlyList<CodeEntry> GetPonyWallCodes() =>
+            CodesUnder("CrawlspaceWall");
+
         public IReadOnlyList<CodeEntry> ExposedFloorCodes() =>
             GetFloorCodes().Where(e => !e.Label.Contains("Gar")).ToList();
 
@@ -235,7 +239,26 @@ namespace HotPort.Models
             GetFloorsAboveCodes().FirstOrDefault();
 
         public CodeEntry? InferInteriorWallCode() =>
-            GetInteriorWallCodes().FirstOrDefault();
+            GetInteriorWallCodes().OrderByDescending(e => e.NominalRValue).LastOrDefault();
+
+        // Pony walls carry the above-grade siding, so match the main wall's siding when possible.
+        public CodeEntry? InferPonyWallCode(string siding)
+        {
+            var codes = GetPonyWallCodes();
+            WallSiding wantSiding = ParseRequestedSiding(siding);
+
+            if (wantSiding != WallSiding.Unknown)
+            {
+                CodeEntry? structured = codes
+                    .Where(c => c.Siding == wantSiding)
+                    .OrderBy(c => c.Label.Length)
+                    .FirstOrDefault();
+                if (structured != null)
+                    return structured;
+            }
+
+            return BestMatch(codes, siding) ?? codes.FirstOrDefault();
+        }
 
         // Returns all codes under the named component section, from both the
         // <UserDefined> and <Favorite> blocks (a section may use either or both)

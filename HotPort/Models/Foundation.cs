@@ -90,7 +90,6 @@ namespace HotPort.Models
             {
                 bsmt.Element("Wall").Element("Construction").Add(
                 new XElement("PonyWallType",
-                new XAttribute("idref", ""),
                     new XAttribute("nominalInsulation", "3.2536"),
                     new XElement("Description", "User specified"),
                     new XElement("Composite",

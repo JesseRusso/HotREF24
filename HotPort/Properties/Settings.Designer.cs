@@ -62,12 +62,12 @@ namespace HotPort.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool WindowsCheckbox {
+        public bool CodeWindowsCheckbox {
             get {
-                return ((bool)(this["WindowsCheckbox"]));
+                return ((bool)(this["CodeWindowsCheckbox"]));
             }
             set {
-                this["WindowsCheckbox"] = value;
+                this["CodeWindowsCheckbox"] = value;
             }
         }
         
@@ -140,6 +140,30 @@ namespace HotPort.Properties {
             }
             set {
                 this["GarageDoorHeight"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("50")]
+        public int MaxWindowRow {
+            get {
+                return ((int)(this["MaxWindowRow"]));
+            }
+            set {
+                this["MaxWindowRow"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ErsWindowsCheckbox {
+            get {
+                return ((bool)(this["ErsWindowsCheckbox"]));
+            }
+            set {
+                this["ErsWindowsCheckbox"] = value;
             }
         }
     }

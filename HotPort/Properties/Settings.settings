@@ -11,7 +11,7 @@
     <Setting Name="TemplateDir" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="WindowsCheckbox" Type="System.Boolean" Scope="User">
+    <Setting Name="CodeWindowsCheckbox" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="CodeLibDir" Type="System.String" Scope="User">
@@ -31,6 +31,12 @@
     </Setting>
     <Setting Name="GarageDoorHeight" Type="System.Double" Scope="User">
       <Value Profile="(Default)">2.0828</Value>
+    </Setting>
+    <Setting Name="MaxWindowRow" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">50</Value>
+    </Setting>
+    <Setting Name="ErsWindowsCheckbox" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>
 </SettingsFile>

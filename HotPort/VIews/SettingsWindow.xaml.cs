@@ -1,5 +1,8 @@
 using HotPort.ViewModels;
 using System.Windows;
+using HotPort.Properties;
+using System;
+using HotPort.Infrastructure;
 
 namespace HotPort.Views
 {

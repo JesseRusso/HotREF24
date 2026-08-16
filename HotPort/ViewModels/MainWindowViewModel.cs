@@ -233,7 +233,7 @@ namespace HotPort.ViewModels
                 return;
             }
 
-            if (Settings.Default.WindowsCheckbox)
+            if (Settings.Default.CodeWindowsCheckbox)
             {
                 cp.RemoveWindows();
                 cp.ExtractWindows();

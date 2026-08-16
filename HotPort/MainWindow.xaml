@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:HotPort.Properties"
         mc:Ignorable="d"
-        Title="HotREF" Height="650"  Width="380" Closing="Window_Closing" ResizeMode="CanMinimize">
+        Title="HotREF" Height="675"  Width="380" Closing="Window_Closing" ResizeMode="CanMinimize">
 
     <DockPanel>
         <DockPanel.Background>
@@ -84,13 +84,15 @@
                         <RowDefinition Height="Auto"/>
                         <!-- 21: Interior Wall -->
                         <RowDefinition Height="Auto"/>
-                        <!-- 22: template label -->
+                        <!-- 22: Pony Wall -->
                         <RowDefinition Height="Auto"/>
-                        <!-- 23: template button -->
+                        <!-- 23: template label -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 24: template button -->
                         <RowDefinition Height="10"/>
-                        <!-- 24: spacer -->
+                        <!-- 25: spacer -->
                         <RowDefinition Height="Auto"/>
-                        <!-- 25: Create button -->
+                        <!-- 26: Create button -->
                     </Grid.RowDefinitions>
 
                     <!-- COD file -->
@@ -131,43 +133,84 @@
                     <ComboBox Grid.Row="20" Grid.Column="1" Height="20" ItemsSource="{Binding FloorsAboveCodes}" Foreground="Blue" SelectedItem="{Binding SelectedFloorsAboveCode}"/>
                     <Label Grid.Row="21" Grid.Column="0" Content="Interior Wall" VerticalAlignment="Center" Padding="0"/>
                     <ComboBox Grid.Row="21" Grid.Column="1" Height="20" Margin="0,2,0,0" ItemsSource="{Binding InteriorWallCodes}" Foreground="Blue" SelectedItem="{Binding SelectedInteriorWallCode}"/>
+                    <Label Grid.Row="22" Grid.Column="0" Content="Pony Wall" VerticalAlignment="Center" Padding="0"/>
+                    <ComboBox Grid.Row="22" Grid.Column="1" Height="20" Margin="0,2,0,0" ItemsSource="{Binding PonyWallCodes}" Foreground="Blue" SelectedItem="{Binding SelectedPonyWallCode}"/>
 
                     <!-- Template -->
-                    <TextBlock Grid.Row="23" Grid.ColumnSpan="2" Text="{Binding TemplateLabel}" FontStyle="Italic" Margin="0,2,0,2"/>
-                    <Button Grid.Row="22" Grid.ColumnSpan="2" Content="Select Template" Command="{Binding SelectTemplateCommand}" Height="20" HorizontalAlignment="Left" Width="160" Margin="0,10,0,0"/>
+                    <TextBlock Grid.Row="24" Grid.ColumnSpan="2" Text="{Binding TemplateLabel}" FontStyle="Italic" Margin="0,2,0,2"/>
+                    <Button Grid.Row="23" Grid.ColumnSpan="2" Content="Select Template" Command="{Binding SelectTemplateCommand}" Height="20" HorizontalAlignment="Left" Width="160" Margin="0,10,0,0"/>
 
                     <!-- Create button -->
-                    <Button Grid.Row="25" Grid.ColumnSpan="2" Content="Create Energuide File" Command="{Binding CreateEnerguideCommand}" Height="22" Margin="0,13,0,0"/>
+                    <Button Grid.Row="26" Grid.ColumnSpan="2" Content="Create Energuide File" Command="{Binding CreateEnerguideCommand}" Height="22" Margin="0,10,0,0"/>
+
+                    <!-- Include windows checkbox -->
+                    <CheckBox Grid.Row="23" Grid.Column="1" Content="Include windows"
+                              HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,8,0,0"
+                              IsChecked="{Binding Source={x:Static properties:Settings.Default},Path=ErsWindowsCheckbox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 </Grid>
             </TabItem>
 
 
             <!-- ═══════════════════ Code Modeling TAB ═══════════════════ -->
             <TabItem Header="Code">
-                <Grid x:Name="grid" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="11*"/>
-                        <ColumnDefinition Width="35*"/>
-                        <ColumnDefinition Width="102*"/>
-                        <ColumnDefinition Width="39*"/>
-                    </Grid.ColumnDefinitions>
+                <Grid x:Name="grid" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" Margin="10">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="0.8*"/>
-                        <RowDefinition />
+                        <RowDefinition Height="Auto"/>
+                        <!-- 0: PROPOSED section -->
+                        <RowDefinition Height="12"/>
+                        <!-- 1: gap between sections -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- 2: REFERENCE section -->
+                        <RowDefinition Height="*"/>
+                        <!-- 3: extra blank space falls to the bottom -->
                     </Grid.RowDefinitions>
 
-                    <Button Content="Select Template" Command="{Binding TemplateCommand}" HorizontalAlignment="Left" Margin="20,42,0,0" VerticalAlignment="Top" Width="190" Grid.Row="0" Height="20" TabIndex="2" Grid.ColumnSpan="3"/>
-                    <CheckBox Content="Include Windows" Grid.Row="0" Margin="131,44,22,0" VerticalAlignment="Top" IsChecked="{Binding Source={x:Static properties:Settings.Default},Path=WindowsCheckbox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.ColumnSpan="2" TabIndex="3" Grid.Column="2"/>
-                    <Button Content="Create Proposed File" Command="{Binding CreatePropCommand}" HorizontalAlignment="Left" Margin="20,99,0,0" VerticalAlignment="Top" Width="320" Height="20" Grid.Row="0" Grid.ColumnSpan="4" TabIndex="4"/>
-                    <Button Content="Select Proposed File" Command="{Binding SelectPropFileCommand}" HorizontalAlignment="Left" Margin="0,237,0,0" VerticalAlignment="Top" Width="240" Height="20" TabIndex="5" Grid.ColumnSpan="2" Grid.Column="1" Grid.RowSpan="2"/>
-                    <Button Content="Create REF" Command="{Binding CreateRefCommand}" HorizontalAlignment="Left" Width="320" Grid.Row="1" Height="20" VerticalAlignment="Top" Margin="20,46,0,0" Grid.ColumnSpan="4" TabIndex="6"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="20,45,0,0" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" Width="300" Text="{Binding ProposedFileLabel}" Grid.ColumnSpan="4"/>
-                    <ComboBox HorizontalAlignment="Right" Margin="0,236,22,0" VerticalAlignment="Top" Width="75" Height="20" Grid.ColumnSpan="2"
-                              ItemsSource="{Binding ZoneNames}" SelectedIndex="{Binding SelectedZoneIndex}" Grid.Column="2" Grid.RowSpan="2"/>
-                    <TextBlock TextWrapping="Wrap" VerticalAlignment="Top" Text="{Binding TemplateLabel}" Grid.ColumnSpan="3" HorizontalAlignment="Left" Width="300" Margin="0,67,0,0" Grid.Column="1"/>
-                    <GroupBox Header="PROPOSED" Margin="10,10,10,95" Grid.Row="0" BorderBrush="#FF979CA0" Panel.ZIndex="-1" Grid.ColumnSpan="4"/>
-                    <GroupBox Header="REFERENCE" Margin="10,192,10,182" Panel.ZIndex="-1" BorderBrush="#FF979CA0" Grid.ColumnSpan="4" Grid.RowSpan="2">
-                        <Label Content="Zone" HorizontalAlignment="Left" Margin="262,0,0,0" VerticalAlignment="Top" Width="75" Height="27"/>
+                    <!-- ── PROPOSED ── -->
+                    <GroupBox Grid.Row="0" Header="PROPOSED" BorderBrush="#FF979CA0">
+                        <Grid Margin="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0" Grid.Column="0" Content="Select Template" Command="{Binding TemplateCommand}"
+                                    HorizontalAlignment="Left" Width="190" Height="20" TabIndex="2"/>
+                            <CheckBox Grid.Row="0" Grid.Column="1" Content="Include Windows" VerticalAlignment="Center" Margin="8,0,0,0" TabIndex="3"
+                                      IsChecked="{Binding Source={x:Static properties:Settings.Default}, Path=WindowsCheckbox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding TemplateLabel}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            <Button Grid.Row="2" Grid.ColumnSpan="2" Content="Create Proposed File" Command="{Binding CreatePropCommand}"
+                                    Height="20" Margin="0,8,0,0" TabIndex="4"/>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- ── REFERENCE ── -->
+                    <GroupBox Grid.Row="2" Header="REFERENCE" BorderBrush="#FF979CA0">
+                        <Grid Margin="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0" Grid.Column="0" Content="Select Proposed File" Command="{Binding SelectPropFileCommand}"
+                                    HorizontalAlignment="Left" Width="190" Height="20" TabIndex="5"/>
+                            <Label Grid.Row="0" Grid.Column="1" Content="Zone" VerticalAlignment="Center" Padding="0" Margin="8,0,4,0"/>
+                            <ComboBox Grid.Row="0" Grid.Column="2" Width="65" Height="20" VerticalAlignment="Center"
+                                      ItemsSource="{Binding ZoneNames}" SelectedIndex="{Binding SelectedZoneIndex}"/>
+                            <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding ProposedFileLabel}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            <Button Grid.Row="2" Grid.ColumnSpan="3" Content="Create REF" Command="{Binding CreateRefCommand}"
+                                    Height="20" Margin="0,8,0,0" TabIndex="6"/>
+                        </Grid>
                     </GroupBox>
                 </Grid>
             </TabItem>

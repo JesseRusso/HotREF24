@@ -115,6 +115,15 @@ namespace HotPort.ViewModels
             set => SetProperty(ref _selectedInteriorWallCode, value);
         }
 
+        public ObservableCollection<CodeEntry> PonyWallCodes { get; } = new();
+
+        private CodeEntry? _selectedPonyWallCode;
+        public CodeEntry? SelectedPonyWallCode
+        {
+            get => _selectedPonyWallCode;
+            set => SetProperty(ref _selectedPonyWallCode, value);
+        }
+
         // --- Template ---
         private string? _templatePath;
         public string? TemplatePath
@@ -157,7 +166,7 @@ namespace HotPort.ViewModels
             if (string.IsNullOrEmpty(codLibDir) || !Directory.Exists(codLibDir))
                 return;
 
-            string builderName = ExcelHelper.GetCellValue(excelFilePath, "Calc", "K1");
+            string builderName = ExcelHelper.GetCellValue(excelFilePath, "Calc", "K1").Replace(" ", "");
             if (string.IsNullOrEmpty(builderName))
                 return;
 
@@ -188,6 +197,7 @@ namespace HotPort.ViewModels
             Populate(GarageFloorCodes, _codeLibrary.GarageFloorCodes());
             Populate(FloorsAboveCodes, _codeLibrary.GetFloorsAboveCodes());
             Populate(InteriorWallCodes, _codeLibrary.GetInteriorWallCodes());
+            Populate(PonyWallCodes, _codeLibrary.GetPonyWallCodes());
 
             if (_excelFilePath != null)
                 InferSelections(_excelFilePath);
@@ -198,7 +208,7 @@ namespace HotPort.ViewModels
             string templateDir = Settings.Default.TemplateDir;
             if (string.IsNullOrEmpty(templateDir) || !Directory.Exists(templateDir))
                 return;
-            string builderName = ExcelHelper.GetCellValue(excelFilePath, "Calc", "K1");
+            string builderName = ExcelHelper.GetCellValue(excelFilePath, "Calc", "K1").Replace(" ", "");
             if (string.IsNullOrEmpty(builderName))
                 return;
             string[] matches = Directory.GetFiles(templateDir, "*.h2k", SearchOption.TopDirectoryOnly)
@@ -254,6 +264,7 @@ namespace HotPort.ViewModels
             SelectedGarageFloorCode = Match(GarageFloorCodes, _codeLibrary!.InferGarageFloorCode());
             SelectedFloorsAboveCode = Match(FloorsAboveCodes, _codeLibrary!.InferFloorsAboveCode());
             SelectedInteriorWallCode = Match(InteriorWallCodes, _codeLibrary!.InferInteriorWallCode());
+            SelectedPonyWallCode = Match(PonyWallCodes, _codeLibrary!.InferPonyWallCode(mainSiding));
         }
 
         // Finds the collection entry whose label matches the inferred entry
@@ -314,7 +325,8 @@ namespace HotPort.ViewModels
                 SelectedExposedFloorCode,
                 SelectedGarageFloorCode,
                 SelectedFloorsAboveCode,
-                SelectedInteriorWallCode);
+                SelectedInteriorWallCode,
+                SelectedPonyWallCode);
 
             string address = MainWindowViewModel.SplitAddress(System.IO.Path.GetFileName(_excelFilePath));
             energuide.ChangeAddress(address);

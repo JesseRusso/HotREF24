@@ -96,10 +96,10 @@ namespace HotPort
 
             XElement? bsmt = house?.Root?.Element("House")?.Element("Components")?.Element("Basement");
             XElement? first = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
-                                where el.Element("Label").Value.Contains("1")
+                                where el.Element("Label")?.Value.Contains("1") ?? false
                                 select el).FirstOrDefault();
             XElement? second = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
-                                where el.Element("Label").Value.Contains("2")
+                                where el.Element("Label")?.Value.Contains("2") ?? false
                                 select el).FirstOrDefault();
             XElement? third = (from el in house.Root?.Element("House")?.Element("Components")?.Descendants("Wall")
                                where el.Element("Label")?.Value.Contains("3") ?? false
@@ -114,7 +114,17 @@ namespace HotPort
             if(third != null) walls[3] = third;
             if(tallWall != null) walls[9] = tallWall;
 
-            walls[_floor].Element("Components").AddFirst(getWindowBlock());
+            if (_floor < 0 || _floor >= walls.Length || walls[_floor] == null)
+                return;
+            XElement wall = walls[_floor];
+            XElement comp2 = wall.Element("Components");
+
+            if (comp2 == null)
+            {
+                comp2 = new XElement("Components");
+                wall.Add(comp2);
+            }
+            comp2.AddFirst(getWindowBlock());
         }
         public override string ToString()
         {

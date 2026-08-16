@@ -1,5 +1,6 @@
 using HotPort.Infrastructure;
 using HotPort.Properties;
+using System.Reflection.Metadata;
 
 namespace HotPort.ViewModels
 {
@@ -10,12 +11,12 @@ namespace HotPort.ViewModels
     internal class SettingsViewModel : ObservableObject
     {
         public DirectoriesSettingsViewModel Directories { get; }
-        public DoorsSettingsViewModel Doors { get; }
+        public WindowsDoorsSettingsViewModel Doors { get; }
 
         public SettingsViewModel(IDialogService dialogs)
         {
             Directories = new DirectoriesSettingsViewModel(dialogs);
-            Doors = new DoorsSettingsViewModel();
+            Doors = new WindowsDoorsSettingsViewModel();
         }
 
         /// <summary>Applies every section to <see cref="Settings"/> and persists once.</summary>

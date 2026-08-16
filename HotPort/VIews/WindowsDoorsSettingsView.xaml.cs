@@ -5,13 +5,13 @@ using System.Windows.Input;
 
 namespace HotPort.Views
 {
-    public partial class DoorsSettingsView : UserControl
+    public partial class WindowsDoorsSettingsView : UserControl
     {
         // Allows the text that would result from the keystroke to remain a valid
         // (possibly partial) non-negative decimal number, e.g. "", "37", "94.5".
         private static readonly Regex NumericPattern = new Regex(@"^\d*\.?\d*$");
 
-        public DoorsSettingsView()
+        public WindowsDoorsSettingsView()
         {
             InitializeComponent();
             DataObject.AddPastingHandler(this, OnPaste);

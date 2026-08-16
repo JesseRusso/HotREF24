@@ -8,7 +8,7 @@ namespace HotPort.ViewModels
     /// Backs the "Doors" section of the settings window. The user edits dimensions
     /// in inches; the backing <see cref="Settings"/> values are stored in metres.
     /// </summary>
-    internal class DoorsSettingsViewModel : ObservableObject
+    internal class WindowsDoorsSettingsViewModel : ObservableObject
     {
         private const double MetresPerInch = 0.0254;
 
@@ -17,14 +17,20 @@ namespace HotPort.ViewModels
         private bool _frontTransom;
         private double _garageDoorWidthInches;
         private double _garageDoorHeightInches;
-
-        public DoorsSettingsViewModel()
+        private int _maxExcelWindowsRow;
+        public WindowsDoorsSettingsViewModel()
         {
             _frontDoorWidthInches = MetresToInches(Settings.Default.FrontDoorWidth);
             _frontDoorHeightInches = MetresToInches(Settings.Default.FrontDoorHeight);
             _frontTransom = Settings.Default.FrontTransom;
             _garageDoorWidthInches = MetresToInches(Settings.Default.GarageDoorWidth);
             _garageDoorHeightInches = MetresToInches(Settings.Default.GarageDoorHeight);
+            _maxExcelWindowsRow = Settings.Default.MaxWindowRow;
+        }
+        public int MaxExcelWindowsRow
+        {
+            get => _maxExcelWindowsRow;
+            set => SetProperty(ref _maxExcelWindowsRow, value);
         }
 
         public double FrontDoorWidthInches
@@ -68,6 +74,7 @@ namespace HotPort.ViewModels
             Settings.Default.FrontTransom = FrontTransom;
             Settings.Default.GarageDoorWidth = GarageDoorWidthInches * MetresPerInch;
             Settings.Default.GarageDoorHeight = GarageDoorHeightInches * MetresPerInch;
+            Settings.Default.MaxWindowRow = MaxExcelWindowsRow;
         }
 
         private static double MetresToInches(double metres) => Math.Round(metres / MetresPerInch, 2);
