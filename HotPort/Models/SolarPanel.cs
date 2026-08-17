@@ -27,7 +27,7 @@ namespace HotPort.Models
                                     new XElement("Manufacturer", Manufacturer),
                                     new XElement("Model", Model)),
                                 new XElement("Array",
-                                    new XAttribute("area", SquareFtToMetres()),
+                                    new XAttribute("area", MetricArea()),
                                     new XAttribute("slope", Slope),
                                     new XAttribute("azimuth", Math.Abs(180 - Azimuth))),
                                 new XElement("Efficiency",
@@ -37,7 +37,7 @@ namespace HotPort.Models
                                     new XAttribute("gridAbsorptionRate", "100")),
                                 new XElement("Module",
                                     new XAttribute("efficiency", Efficiency),
-                                    new XAttribute("cellTemperature", TempCelcius()),
+                                    new XAttribute("cellTemperature", MetricTemp()),
                                     new XAttribute("coefficientOfEfficiency", MetricCoefficient()),
                                     new XElement("Type",
                                         new XAttribute("code", "6"),
@@ -54,10 +54,9 @@ namespace HotPort.Models
                                             new XElement("English", "Westerly"),
                                             new XElement("French", "Vers l'ouest"))));
             return panel;
-
         }
 
-        private double TempCelcius()
+        private double MetricTemp()
         {
             double celcius = Math.Round((OperatingTemp - 32) / 1.8, 4);
             return celcius;
@@ -66,7 +65,7 @@ namespace HotPort.Models
         {
             return Math.Round(TempCoeff * 1.8, 4);
         }
-        private double SquareFtToMetres()
+        private double MetricArea()
         {
             return Math.Round(Area * 0.092903, 4);
         }

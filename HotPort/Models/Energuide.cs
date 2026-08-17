@@ -810,8 +810,8 @@ namespace HotPort.Models
                         ApplyCode(bsmt.Element("Components").Element("FloorHeader").Element("Construction").Element("Type"),
                             _floorHeaderCode, includeNominalInsulation: true);
                 }
-                //Sets the floor above/below frostline attribute based on average depth of basement below grade
-                if (depthBelow < 4D)
+                //Sets the floor above/below frostline attribute based on average depth of basement below grade. 
+                if (depthBelow < 1.219)
                     bsmt.Element("Floor").Element("Construction").SetAttributeValue("isBelowFrostline", "false");
 
                 House.Root.Element("House").Element("Components").Add(bsmt);
