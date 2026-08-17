@@ -742,15 +742,15 @@ namespace HotPort.Models
             {
                 _basementPresent = true;
 
-                double pony = Math.Round(GetDoubleCellValue("Calc", "I38") * 0.3048, 4);
-                string corners = GetCellValue("Calc", "J38");
-                double expPerim = Math.Round(Convert.ToDouble(GetCellValue("Calc", "E38")) * 0.3048, 4);
-                double floorPerim = Math.Round(GetDoubleCellValue("Calc", "D38") * 0.3048, 4);
-                double floorArea = Math.Round(GetDoubleCellValue("Calc", "F38") * 0.092903, 4);
-                double wallHeight = Math.Round(GetDoubleCellValue("Calc", "G38") * 0.3048, 4);
-                double depthBelow = Math.Round(GetDoubleCellValue("Calc", "H38") * 0.3048, 4);
-                double headerHeight = Math.Round(GetDoubleCellValue("Calc", "K38") * 0.3048, 4);
-                double headerPerim = Math.Round(GetDoubleCellValue("Calc", "L38") * 0.3048, 4);
+                double pony = Math.Round(GetDoubleCellValue("Calc", "O61") * 0.3048, 4);
+                string corners = GetCellValue("Calc", "P61");
+                double expPerim = Math.Round(Convert.ToDouble(GetCellValue("Calc", "K61")) * 0.3048, 4);
+                double floorPerim = Math.Round(GetDoubleCellValue("Calc", "J61") * 0.3048, 4);
+                double floorArea = Math.Round(GetDoubleCellValue("Calc", "L61") * 0.092903, 4);
+                double wallHeight = Math.Round(GetDoubleCellValue("Calc", "M61") * 0.3048, 4);
+                double depthBelow = Math.Round(GetDoubleCellValue("Calc", "N61") * 0.3048, 4);
+                double headerHeight = Math.Round(GetDoubleCellValue("Calc", "Q61") * 0.3048, 4);
+                double headerPerim = Math.Round(GetDoubleCellValue("Calc", "R61") * 0.3048, 4);
 
                 Foundation fnd = new Foundation
                 {
