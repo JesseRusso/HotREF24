@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Input;
 using System.Xml.Linq;
+using System;
 
 namespace HotPort.ViewModels
 {
@@ -330,7 +331,15 @@ namespace HotPort.ViewModels
 
             string address = MainWindowViewModel.SplitAddress(System.IO.Path.GetFileName(_excelFilePath));
             energuide.ChangeAddress(address);
-            energuide.Generate();
+
+            try { energuide.Generate(); }
+            catch (Exception ex)
+            {
+                _dialogs.ShowError(ex.Message, "Error generating Energuide file");
+                ExcelHelper.CloseCachedDocuments();
+                return;
+            }
+
             string defaultName = address + "-P";
             if (_dialogs.TrySaveFile(
                     "Save Energuide File",
@@ -341,7 +350,6 @@ namespace HotPort.ViewModels
             {
                 energuide.House.Save(savePath, SaveOptions.None);
             }
-
             ExcelHelper.CloseCachedDocuments();
         }
     }
